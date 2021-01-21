@@ -1,0 +1,78 @@
+/* TopTemp START */
+#settings_plugin_toptemp .form-horizontal .control-group {
+    margin-bottom: 8px;
+}
+
+#settings_plugin_toptemp .UICShowIconPicker i{
+    display: inline-block;
+}
+#settings_plugin_toptemp .btnAddonHack{
+    border-radius: 0 4px 4px 0;
+}
+
+#settings_plugin_toptemp .toptempWarn{
+    margin-right: -25px;
+}
+
+#settings_plugin_toptemp #TopTempSortList .accordion-heading {
+    display: block;
+    padding: 8px 15px;
+    cursor: grab;
+}
+#settings_plugin_toptemp li.tabdrop li.pull-right{
+    float: inherit !important;
+}
+
+#settings_plugin_toptemp #TopTempSortList .accordion-heading .btn{
+    margin-right: 10px;
+}
+
+#navbar_plugin_toptemp{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#navbar_plugin_toptemp .TopTempArrow{
+    transform: rotate(45deg);
+    padding: 0px 2px;
+}
+
+#navbar_plugin_toptemp > div{
+    margin-top: -2px;
+}
+
+#navbar_plugin_toptemp div.TopTempPrinter, #navbar_plugin_toptemp div.TopTempCustom{
+    position: relative;
+}
+
+#navbar_plugin_toptemp div .TopTempIcon{
+    display: block;
+    text-align:center;
+}
+
+#navbar_plugin_toptemp div .TopTempIconNo{
+    position: relative;
+    top: 4px;
+    left: 2px;
+    font-weight: bold;
+    font-size: 10px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+#navbar_plugin_toptemp div.TopTempGraph{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 0PX;
+}
+
+#navbar_plugin_toptemp div.TopTempGraph .ct-line {
+    stroke-width: 1px;
+    stroke-opacity: 0.4;
+    stroke: #000;
+}
+
+
+
+/* TopTemp END */
