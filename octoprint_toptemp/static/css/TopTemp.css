@@ -68,8 +68,7 @@
 #navbar_plugin_toptemp div.TopTempGraph{
     position: absolute;
     width: 100%;
-    height: 100%;
-    padding: 0PX;
+    padding: 0px;
 }
 
 #navbar_plugin_toptemp div.TopTempGraph .ct-line {

@@ -354,6 +354,11 @@ $(function() {
              // build custom monitors - poor mans dynamic ko
             $('#TopTempSettingCustomMenu ul.dropdown-menu > li.TopTempCustMenu').remove();
             var template = $($('#settings_toptemp_customTemplate').wrap('p').parent().clone().html())
+            if (Object.keys(self.settings.customMon).length){
+                $('#TopTempSettingCustomMenu ul.dropdown-menu li.divider').show();
+            }else{
+                $('#TopTempSettingCustomMenu ul.dropdown-menu li.divider').hide();
+            }
             $.each(self.settings.customMon,function(idx,val){
                 var newId = 'settings_toptemp_'+idx;
                 if (!$('#'+newId).length){
@@ -863,7 +868,7 @@ $(function() {
             // Remove old
             $('#TopTempGraph_'+name+'_style').remove();
             // Build new
-            $('head').append('<style id="TopTempGraph_'+name+'_style">#TopTempGraph_'+name+'_graph.TopTempGraph > svg >g .ct-line{stroke-width: '+settings.width()+'px; stroke-opacity: '+settings.opa()+'; stroke: '+settings.color()+';}</style>');
+            $('head').append('<style id="TopTempGraph_'+name+'_style">#TopTempGraph_'+name+'_graph{height:'+settings.height()+'%};#TopTempGraph_'+name+'_graph.TopTempGraph > svg >g .ct-line{stroke-width: '+settings.width()+'px; stroke-opacity: '+settings.opa()+'; stroke: '+settings.color()+';}</style>');
             // Show the graph?
             if (settings.show){
                 $('#TopTempGraph_'+name+'_graph').show();

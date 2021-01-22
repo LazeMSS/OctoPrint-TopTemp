@@ -28,14 +28,12 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # List of cpu temp methods found
         self.cpuTemps = {}
 
-        # Make sure we dont init twice
-        self.configLoaded = False
-
         # base config
         # customMon is all the custom monitoring items index by "customN" - a bit of a hackish way
         # Sort order is the order how the items are displayed in the UI
         self.noTools = 10
         self.defaultConfig = {
+            'firstRun' : True,
             'fahrenheit' : False,
             'hideInactiveTemps' : True,
             'noTools' : self.noTools,
@@ -44,6 +42,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             'innerMargin': 8,
             'customMon': {}
         }
+
+
+        self.defaultsCustom = {'cmd':'','name':'','interval': 25}
 
         # Build extra config templates
         self.tempItems = {'bed' : 'fas fa-window-minimize','chamber' : 'far fa-square'}
@@ -61,10 +62,11 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             'showUnit': True,
             'decSep': ',',
             'graphSettings': {
+                'height': 50,
                 'show': True,
                 'opa': 0.2,
                 'width': 1,
-                'color' : '#000000'
+                'color' : '#000000',
             }
         }
 
@@ -92,6 +94,49 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             dict(type="settings", custom_bindings=False)
         ]
 
+
+    # Fix dynamic default settings for custom monitoring and fix first run
+    def on_settings_initialized(self):
+        # Get cpu options
+        self.checkCpuTempMethods()
+        customMon = self._settings.get(["customMon"],merged=True,asdict=True)
+
+        # Should we update the custom mappings
+        if customMon:
+            self.debugOut("Fixing custom monitors")
+            newCust = {}
+            # parse all and merge
+            for ckey in customMon:
+                temp = self._merge_dictionaries(self.tempTemplate.copy(),self.defaultsCustom.copy())
+                newCust[ckey] = self._merge_dictionaries(temp,customMon[ckey])
+                self.debugOut(newCust[ckey].copy())
+            # Save the new data
+            self._settings.set(["customMon"],newCust.copy(),True)
+
+        # First run chek
+        firstRun = self._settings.get(["firstRun"],merged=True,asdict=True)
+
+        # Not first run - then do nothing
+        if firstRun == False:
+            return
+
+        # Remove first run
+        self.debugOut("First run")
+        self._settings.set(["firstRun"],False,True)
+
+        # Append default cpu monitor
+        for key in self.cpuTemps:
+            if self.cpuTemps[key][1] != False:
+                self.debugOut("Appeding default CPU temp")
+                # Make template
+                temp = self._merge_dictionaries(self.tempTemplate.copy(),self.defaultsCustom.copy())
+                # Assign
+                newCust = {'cu0':temp}
+                newCust['cu0']['cmd'] = self.cpuTemps[key][0]
+                newCust['cu0']['name'] = 'CPU temperature'
+                self.debugOut(newCust)
+                self._settings.set(["customMon"],newCust,True)
+                break
 
     # Save handler - has a bit of hack to cleanup remove custom monitors
     def on_settings_save(self,data):
@@ -143,6 +188,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         # Needed to write all the data - when deleting
         self._settings.set(["customMon"],newCust.copy(),True)
+        # Save first run or not
+        self._settings.set(["firstRun"],False)
 
 
     # ----------------------------------------------------------------------------------------------------------------
@@ -150,23 +197,6 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     # ----------------------------------------------------------------------------------------------------------------
     def get_settings_defaults(self):
         # Lets try and build a default monitor to add to the default settings
-        if self.configLoaded == False:
-            self.configLoaded = True
-            self.checkCpuTempMethods()
-            for key in self.cpuTemps:
-                if self.cpuTemps[key][1] != False:
-                    # append a default 0 monitor
-                    # self.defaultConfig['customMon']['cu0'] = {'cmd':self.cpuTemps[key][0],'name':'CPU temperature','interval': 10}
-                    # self.defaultConfig['customMon']['cu0'].update(self.tempTemplate.copy())
-                    # self.defaultConfig['customMon']['cu0']['label'] = 'CPU: '
-                    # self.defaultConfig['customMon']['cu0']['icon'] = 'fas fa-microchip'
-
-                    # debug - add a random version
-                    # self.defaultConfig['customMon']['custom1'] = {'cmd':'/usr/bin/shuf -i 1-25 -n 1','name':'Random','interval': 5}
-                    # self.defaultConfig['custom1'] = self.tempTemplate.copy()
-                    # self.defaultConfig['custom1']['label'] = 'R: '
-                    # self.defaultConfig['custom1']['icon'] = 'fas fa-random'
-                    break
 
         # Build default settings
         for key in self.tempItems:
@@ -248,7 +278,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     # ----------------------------------------------------------------------------------------------------------------
     # Start custom monitors
     def initCustomMon(self):
-        custoMon = self._settings.get(['customMon'],merged=True,asdict=True)
+        customMon = self._settings.get(['customMon'],merged=True,asdict=True)
 
         # stop old timers if someone is calling us
         for timer in self.timers:
@@ -259,11 +289,11 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.customHistory = {}
 
         # setup all the other monitors
-        for mon in custoMon:
-            if custoMon[mon]['cmd']:
+        for mon in customMon:
+            if customMon[mon]['cmd']:
                 monVal = str(mon)
-                monCmd = str(custoMon[monVal]['cmd'])
-                intVal = int(custoMon[monVal]['interval'])
+                monCmd = str(customMon[monVal]['cmd'])
+                intVal = int(customMon[monVal]['interval'])
                 self.startTimer(monVal,intVal,monCmd)
 
 
@@ -273,11 +303,11 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             self.timers[indx].cancel()
 
         self.debugOut("Setting up custom monitor for \"" + cmd + "("+indx+") running each " + str(interval) + " seconds")
-        self.timers[indx] = RepeatedTimer(interval,self.runCustoMon, run_first=True,args=[indx,cmd])
+        self.timers[indx] = RepeatedTimer(interval,self.runCustomMon, run_first=True,args=[indx,cmd])
         self.timers[indx].start()
 
     # Trigger by the timerf
-    def runCustoMon(self,indx,cmd):
+    def runCustomMon(self,indx,cmd):
         code, out, err = self.runcommand(cmd)
         self.debugOut(cmd + " returned: " +out + " for index :"+indx)
         if code or err:
@@ -368,6 +398,24 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # self._logger.info(msg)
         return
 
+    # https://karthikbhat.net/recursive-dict-merge-python/
+    def _merge_dictionaries(self,dict1, dict2):
+        """
+        Recursive merge dictionaries.
+
+        :param dict1: Base dictionary to merge.
+        :param dict2: Dictionary to merge on top of base dictionary.
+        :return: Merged dictionary
+        """
+        for key, val in dict1.items():
+            if isinstance(val, dict):
+                dict2_node = dict2.setdefault(key, {})
+                self._merge_dictionaries(val, dict2_node)
+            else:
+                if key not in dict2:
+                    dict2[key] = val
+
+        return dict2
 
     # run command wrapper
     def runcommand (self,cmd):

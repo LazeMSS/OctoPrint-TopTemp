@@ -16,7 +16,7 @@
             <a class="dropdown-toggle" data-toggle="dropdown" href="#">Custom<b class="caret"></b></a>
             <ul class="dropdown-menu">
                 <li class="divider"></li>
-                <li><a tabindex="-1" href="#" id="settings_plugin_toptemp_newCustom">Add new</a></li>
+                <li><a tabindex="-1" href="#" id="settings_plugin_toptemp_newCustom"><i class="fas fa-plus"></i> Add new</a></li>
             </ul>
         </li>
         <li class="pull-right"><a id="TopTempTogglePreview" href="javascript:void(0);"><i class="far fa-square"></i>&nbsp;Preview</a></li>
@@ -158,6 +158,12 @@
                             <span class="help-inline">1 = no transparency, 0.10 = almost hidden</span>
                         </div>
                     </div>
+                    <div class="control-group" title="Graph height">
+                        <label class="control-label">Graph height</label>
+                        <div class="controls">
+                            <input type="number" min="1" max="100" step="1" data-bind="value: settings.plugins.toptemp.bed.graphSettings.height">
+                        </div>
+                    </div>
                     <div class="control-group" title="Graph line width">
                         <label class="control-label">Graph line width</label>
                         <div class="controls">
@@ -275,6 +281,12 @@
                         <div class="controls">
                             <input type="number" min="0.01" max="1" step="0.01" data-bind="value: settings.plugins.toptemp.chamber.graphSettings.opa">
                             <span class="help-inline">1 = no transparency, 0.10 = almost hidden</span>
+                        </div>
+                    </div>
+                    <div class="control-group" title="Graph height">
+                        <label class="control-label">Graph height</label>
+                        <div class="controls">
+                            <input type="number" min="1" max="100" step="1" data-bind="value: settings.plugins.toptemp.chamber.graphSettings.height">
                         </div>
                     </div>
                     <div class="control-group" title="Graph line width">
@@ -401,6 +413,12 @@
                         <div class="controls">
                             <input type="number" min="0.01" max="1" step="0.01" data-bind="value: $parent.settings.plugins.toptemp['tool'+$index()].graphSettings.opa">
                             <span class="help-inline">1 = no transparency, 0.10 = almost hidden</span>
+                        </div>
+                    </div>
+                    <div class="control-group" title="Graph height">
+                        <label class="control-label">Graph height</label>
+                        <div class="controls">
+                            <input type="number" min="1" max="100" step="1" data-bind="value: $parent.settings.plugins.toptemp['tool'+$index()].graphSettings.height">
                         </div>
                     </div>
                     <div class="control-group" title="Graph line width">
@@ -540,6 +558,12 @@
                         <div class="controls">
                             <input type="number" min="0.01" max="1" step="0.01" data-settings="graphSettings.opa">
                             <span class="help-inline">1 = no transparency, 0.10 = almost hidden</span>
+                        </div>
+                    </div>
+                    <div class="control-group" title="Graph height">
+                        <label class="control-label">Graph height</label>
+                        <div class="controls">
+                            <input type="number" min="1" max="100" step="1" data-settings="graphSettings.height">
                         </div>
                     </div>
                     <div class="control-group" title="Graph line width">
