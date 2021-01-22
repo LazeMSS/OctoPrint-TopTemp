@@ -34,6 +34,10 @@
     margin-top: 5px;
 }
 
+.UICHeaderIcons #navbar_plugin_toptemp{
+    margin-top: -5px;
+}
+
 #navbar_plugin_toptemp .TopTempArrow{
     transform: rotate(45deg);
     padding: 0px 2px;
