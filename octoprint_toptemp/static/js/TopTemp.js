@@ -853,10 +853,16 @@ $(function() {
         self.buildContainer = function(name,className){
             var elname = 'navbar_plugin_toptemp_'+name;
             var settings = self.getSettings(name);
+            if (self.isCustom(name)){
+                var prettyName = settings.name();
+            }else{
+                var prettyName = name.replace("tool", "Tool ");
+                prettyName = prettyName.charAt(0).toUpperCase() + prettyName.slice(1);
+            }
             // Remove old
             $('#'+elname).remove();
             // Build new
-            $('#navbar_plugin_toptemp').append('<div id="'+elname+'" class="'+className+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text"></div></div>');
+            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text"></div></div>');
             if (!settings.show()){
                 $('#'+elname).hide();
             }
