@@ -359,7 +359,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         # Get template setting
         if command == "getDefaultSettings":
-            return flask.jsonify(self.tempTemplate)
+            template = self.tempTemplate.copy()
+            template.update(self.defaultsCustom)
+            return flask.jsonify(template)
 
          # Get history data
         if command == "testCmd":

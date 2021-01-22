@@ -655,7 +655,8 @@ $(function() {
                 }
                 OctoPrint.simpleApiCommand("toptemp", "getDefaultSettings", {}).done(function(response) {
                     self.tempNewCust.push(newid);
-                    self.settings.customMon[newid] = ko.mapping.fromJS({...{ 'cmd' : '' ,'name': 'Custom '+cmindex ,'interval': 25, 'new' :  ko.observable(true), 'delThis' :  ko.observable(false)}, ...response });
+                    self.settings.customMon[newid] = ko.mapping.fromJS({...{'new' :  ko.observable(true), 'delThis' :  ko.observable(false)}, ...response });
+                    self.settings.customMon[newid]['name']('Custom '+cmindex);
                     // Build it all again
                     self.buildCustomSettings();
                     // Show an alert
