@@ -550,7 +550,7 @@ $(function() {
             $('#TopTempSortList').data('sorter',sorter);
 
             // Add icon picker from UI Customizer if present
-            if (typeof OctoPrint.coreui.viewmodels.uICustomizerViewModel != undefined){
+            if ('uICustomizerViewModel' in OctoPrint.coreui.viewmodels){
                 $('#settings_plugin_toptemp .UICShowIconPicker').popover('destroy').removeAttr('Title');
                 $('#settings_plugin_toptemp .UICShowIconPicker').each(function(){
                     var $this = $(this);
