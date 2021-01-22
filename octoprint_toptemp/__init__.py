@@ -73,7 +73,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     # ----------------------------------------------------------------------------------------------------------------
     def on_after_startup(self):
         self.initCustomMon()
-        self._logger.info("TopTemp is initialized.")
+        self._logger.info("TopTemp is initialized")
 
     # ----------------------------------------------------------------------------------------------------------------
     # get files to be include in the UI
@@ -95,8 +95,6 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
     # Save handler - has a bit of hack to cleanup remove custom monitors
     def on_settings_save(self,data):
-        self.debugOut(data)
-
         # Do we have custom data in the post?
         if 'customMon' not in data:
             octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
@@ -105,10 +103,10 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # Get old data to use
         custOld = self._settings.get(["customMon"],merged=True,asdict=True)
         newCust = {}
-        self.debugOut(custOld)
 
         # Parse new data
         for ckey in data['customMon']:
+            newMonCmd = False
             # self._logger.info("---------------------------------%s---------------------------------------------",ckey)
             newData = data['customMon'][ckey].copy()
 
@@ -119,10 +117,19 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 if 'new' in newData and newData['new'] == True:
                     # self._logger.info("Creating new: %s",ckey)
                     newCust[ckey] = newData
+                    newMonCmd = True
                 else:
                     # self._logger.info("Merging old data from: %s ",ckey)
                     newCust[ckey] = custOld[ckey].copy()
+                    if 'cmd' in newData and custOld[ckey]['cmd'] != newData['cmd']:
+                        newMonCmd = True
                     newCust[ckey].update(newData)
+
+            # new timer need
+            if newMonCmd == True:
+                self.debugOut("New mon needed: "+ckey + ":"+newCust[ckey]['cmd'])
+                self.startTimer(ckey,int(newCust[ckey]['interval']),newCust[ckey]['cmd'])
+
 
         # debug
         for key in newCust:
@@ -137,7 +144,6 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # Needed to write all the data - when deleting
         self._settings.set(["customMon"],newCust.copy(),True)
 
-        self.initCustomMon()
 
     # ----------------------------------------------------------------------------------------------------------------
     # default settings
@@ -244,26 +250,36 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     def initCustomMon(self):
         custoMon = self._settings.get(['customMon'],merged=True,asdict=True)
 
-        # stop old timers
+        # stop old timers if someone is calling us
         for timer in self.timers:
-            self.debugOut(timer)
             self.timers[timer].cancel()
-        # cleanup
+
+        # cleanup all
         self.timers = {}
         self.customHistory = {}
 
         # setup all the other monitors
         for mon in custoMon:
             if custoMon[mon]['cmd']:
-                # self._logger.info("Setting up custom monitor for \"%s\" running each %s seconds",custoMon[mon]['name'],custoMon[mon]['interval'])
-                self.timers[mon] = RepeatedTimer(custoMon[mon]['interval'],self.runCustoMon, run_first=True,args=[mon,custoMon[mon]])
-                self.timers[mon].start()
+                monVal = str(mon)
+                monCmd = str(custoMon[monVal]['cmd'])
+                intVal = int(custoMon[monVal]['interval'])
+                self.startTimer(monVal,intVal,monCmd)
 
+
+    def startTimer(self,indx,interval,cmd):
+        if indx in self.timers:
+            self.debugOut("Stopping timer: " + indx)
+            self.timers[indx].cancel()
+
+        self.debugOut("Setting up custom monitor for \"" + cmd + "("+indx+") running each " + str(interval) + " seconds")
+        self.timers[indx] = RepeatedTimer(interval,self.runCustoMon, run_first=True,args=[indx,cmd])
+        self.timers[indx].start()
 
     # Trigger by the timerf
-    def runCustoMon(self,indx,custoMonDict):
-        code, out, err = self.runcommand(custoMonDict['cmd'])
-        self.debugOut(custoMonDict['cmd'] + " returned: " +out)
+    def runCustoMon(self,indx,cmd):
+        code, out, err = self.runcommand(cmd)
+        self.debugOut(cmd + " returned: " +out + " for index :"+indx)
         if code or err:
             self._plugin_manager.send_plugin_message(self._identifier, dict(success=False,error=err,returnCode=code,result=None,key=indx))
         else:
@@ -274,9 +290,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 self.customHistory[indx].append(float(out))
                 # slice of 200
                 self.customHistory[indx][-200:]
-            # send to the frontend
-            self._plugin_manager.send_plugin_message(self._identifier, dict(success=True,error=err,returnCode=code,result=out,key=indx))
 
+                # send to the frontend
+                self._plugin_manager.send_plugin_message(self._identifier, dict(success=True,error=err,returnCode=code,result=out,key=indx))
 
     # Available commands and parameters
     # testCmd: will run any command
@@ -349,8 +365,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
 
     def debugOut(self,msg):
+        # self._logger.info(msg)
         return
-        self._logger.info(msg)
+
 
     # run command wrapper
     def runcommand (self,cmd):
