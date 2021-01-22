@@ -228,7 +228,6 @@ $(function() {
             if (plugin != "toptemp"){
                 return;
             }
-            console.log(data);
             if (!('success' in data) || data.success == false){
                 return;
             }
@@ -242,15 +241,13 @@ $(function() {
                 $('div.modal-backdrop').css('top','');
 
                 // Cleanup and prepare settings
-                console.log("--- CLEANUP - SAVE ---");
-
                 // Append not deleted to the start to clean up indexes
                 $.each(self.settings.customMon,function(i,v){
                     if (!(i in self.deleteCust)){
                         if ('new' in self.settings.customMon[i] && self.settings.customMon[i]['new']()){
-                            console.log("Creating: " + i);
+                            // console.log("Creating: " + i);
                         }else{
-                            console.log("Updating: " + i);
+                            // console.log("Updating: " + i);
                         }
                         self.settings.customMon[i]['updated'](new Date().getTime());
                         self.settings.customMon[i]['delThis'](false);
@@ -261,7 +258,7 @@ $(function() {
                     // Remove from sort
                     $('#TopTempSortList >div[data-sortid="'+i+'"]').remove();
                     if (i in self.deleteCust){
-                        console.log("Deleting: " + i);
+                        // console.log("Deleting: " + i);
                         self.settings.customMon[i]['delThis'](true);
                         self.settings.customMon[i]['updated'](new Date().getTime());
                     }
@@ -284,7 +281,7 @@ $(function() {
 
             // Clean the UI always to get it recreated
             $.each(self.tempNewCust,function(i,v){
-                console.log("CLEAN UP UI TEMP: "+v);
+                // console.log("CLEAN UP UI TEMP: "+v);
                 $('#TopTempSortList >div[data-sortid="'+v+'"]').remove();
                 $('#settings_toptemp_'+v).remove();
             });
@@ -293,7 +290,7 @@ $(function() {
             if (!self.settingsSaved){
                 // Delete temporay items if not saving
                 $.each(self.tempNewCust,function(i,v){
-                    console.log("DELETE TEMP CREATED: "+v);
+                    // console.log("DELETE TEMP CREATED: "+v);
                     delete self.settings[v];
                     delete self.settings.customMon[v];
                 });
@@ -301,7 +298,7 @@ $(function() {
             self.tempNewCust = [];
             // Clean ui for deletion
             $.each(self.deleteCust,function(i,v){
-                console.log("CLEAN UP DELETE: "+i);
+                // console.log("CLEAN UP DELETE: "+i);
                 $('#TopTempSortList >div[data-sortid="'+i+'"]').remove();
                 $('#settings_toptemp_'+i).remove();
             });
@@ -310,7 +307,7 @@ $(function() {
             // Match up with the settings saved
             $.each(self.settings.customMon,function(i,v){
                 if ('delThis' in v && v['delThis']()){
-                    console.log("deleting from setting : " + i)
+                    // console.log("deleting from setting : " + i)
                     delete self.settings.customMon[i];
                 }else{
                     if ('new' in v){
