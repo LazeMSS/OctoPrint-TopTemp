@@ -48,11 +48,12 @@ $(function() {
 
         // Process data and format it
         self.FormatTempHTML = function(name, data, customType){
-            $('#navbar_plugin_toptemp small').remove();
             if (self.updatePaused){
                 return;
             }
+            $('#navbar_plugin_toptemp_'+name).removeClass('TopTempLoad');
 
+            // Setting lookup
             var iSettings = self.getSettings(name);
 
             // Do know this or want it shown
@@ -797,7 +798,7 @@ $(function() {
 
         // Build containers
         self.buildContainers = function(){
-            $('#navbar_plugin_toptemp').html('<small>Waiting&hellip;</small>');
+            $('#navbar_plugin_toptemp').html('');
             var allItems = self.buildIconOrder();
             // Build containers
             $.each(allItems, function(id,name){
@@ -806,12 +807,18 @@ $(function() {
                     return true;
                 }
                 if (self.isCustom(name)){
-                    self.buildContainer(name,'TopTempCustom');
+                    self.buildContainer(name,'TopTempCustom TopTempLoad');
                 }else{
-                    self.buildContainer(name,'TopTempPrinter');
+                    self.buildContainer(name,'TopTempPrinter TopTempLoad');
                 }
             });
             self.fixMargins();
+            // Get data from history
+            $.each(self.customHistory,function(k,v){
+                if ($('#navbar_plugin_toptemp_'+k).length){
+                    self.FormatTempHTML(k,{'actual' : v[v.length-1]},true);
+                }
+            });
         }
 
         self.isCustom = function(string){
