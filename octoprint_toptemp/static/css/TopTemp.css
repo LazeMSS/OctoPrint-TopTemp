@@ -10,7 +10,7 @@
     border-radius: 0 4px 4px 0;
 }
 
-#settings_plugin_toptemp .toptempWarn{
+#settings_plugin_toptemp .toptempWarn i{
     margin-right: -25px;
 }
 
