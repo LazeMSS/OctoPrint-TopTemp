@@ -1,6 +1,6 @@
 # TopTemp
 ![](extras/main.png)<br/>
-A [OctoPrint](https://github.com/foosel/OctoPrint) plugin that will show you the temperatures of hotend, chamber, all tools/hotends and also add an unlimited number of your own “top widgets” for example showing cpu temperature, fan speed - well anything number (for now) you can get back from running a command.
+A [OctoPrint](https://github.com/foosel/OctoPrint) plugin that will show you the temperatures of hotend, chamber, all tools/hotends and also add an unlimited number of your own “top widgets” for example showing cpu temperature, fan speed - well anything that is a number (for now) that you can get back from running a command.
 It can all be customized and setup to fit your needs:
 * Add a small background graph to show the history
 * Customizable “widgets” can have different run intervals 
@@ -24,6 +24,8 @@ It can all be customized and setup to fit your needs:
 * Small font options
 * Max width per "widget"
 * More custom/predefined tools: Wifi signal, Disk space, Fan speed, CPU percentage
+* Custom option to set as not a temperature (no fahrenheit conversion and no check for number)
+* Custom option postfix label (rpm etc)
 
 ## Setup
 Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wiki/Plugin:-Plugin-Manager)
@@ -34,7 +36,7 @@ or manually using this URL:
 Install and read the onscreen information - it should be pretty self-explanatory else play with it :) 
 
 ## Custom commands special
-The custom commands allow you to run any OS command by entering a command into the “Command” field. There is a Test button that will run the command and let you validate the returned data.
+The custom commands allow you to run any OS command by entering a command into the “Command” field. There is a Test button that will run the command and let you validate the returned data. At the moment the returned data has to be a number (float or integer) and will be fixed
 If the plugin has detected any known ways of finding interesting data on startup this will be shown in Predefined dropdown button.
 At the moment it only looks for known CPU temperature, but if you know of any good generic ways to display interesting data then post it here https://github.com/LazeMSS/OctoPrint-TopTemp/issues
 
