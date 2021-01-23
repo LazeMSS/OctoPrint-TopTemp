@@ -16,7 +16,8 @@ Settings:
     - Set lowpoint for graph
     - max width for graph/display
     - Custom option to set as not a temperature (no fahrenheit conversion and check for number)
-    - Custom option postfix label
+    - Custom option postfix label (rpm etc)
+    -
 
 - icon color?
 */
