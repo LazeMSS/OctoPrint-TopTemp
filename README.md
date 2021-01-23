@@ -1,6 +1,7 @@
 # TopTemp
 ![](extras/main.png)<br/>
-A [OctoPrint](https://github.com/foosel/OctoPrint) plugin that will show you the temperatures of hotend, chamber, all tools/hotends and also add an unlimited number of your own “top widgets” for example showing cpu temperature, fan speed - well anything that is a number (for now) that you can get back from running a command.
+A [OctoPrint](https://github.com/foosel/OctoPrint) plugin that will show you the temperatures in the navbar/topbar of OctoPrint. It can display the hotend, chamber, all tools/hotends and also add an unlimited number of your own “top widgets” for example showing cpu temperature, fan speed - well anything that is a number (for now) that you can get back from running a command.
+
 It can all be customized and setup to fit your needs:
 * Add a small background graph to show the history
 * Customizable “widgets” can have different run intervals 
