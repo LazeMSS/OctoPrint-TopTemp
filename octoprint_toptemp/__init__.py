@@ -166,8 +166,14 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 else:
                     # self._logger.info("Merging old data from: %s ",ckey)
                     newCust[ckey] = custOld[ckey].copy()
+                    # New command
                     if 'cmd' in newData and custOld[ckey]['cmd'] != newData['cmd']:
                         newMonCmd = True
+                    # New interval
+                    if 'interval' in newData and custOld[ckey]['interval'] != newData['interval']:
+                        newMonCmd = True
+
+                    # Assign new
                     newCust[ckey].update(newData)
 
             # new timer need
@@ -319,7 +325,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                     self.customHistory[indx] = []
                 self.customHistory[indx].append(float(out))
                 # slice of 200
-                self.customHistory[indx][-200:]
+                self.customHistory[indx] = self.customHistory[indx][-200:]
 
                 # send to the frontend
                 self._plugin_manager.send_plugin_message(self._identifier, dict(success=True,error=err,returnCode=code,result=out,key=indx))

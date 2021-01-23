@@ -11,8 +11,11 @@ Monitors:
 - Scroll/cycle view for multiple tools ?
 
 Settings:
+    - Popover with more info
     - small fonts options
     - Set lowpoint for graph
+    - max width for graph/display
+    - Custom set as not a temperature
 
 - icon color?
 */
@@ -233,6 +236,10 @@ $(function() {
             if (!('success' in data) || data.success == false){
                 return;
             }
+            if (!(data.key in self.customHistory)){
+                self.customHistory[data.key] = [];
+            }
+            self.customHistory[data.key].push(data.result);
             self.FormatTempHTML(data.key,{'actual' : data.result},true);
         }
 
@@ -563,11 +570,14 @@ $(function() {
                     var targetID = targetCon.attr('id').replace('settings_toptemp_','');
                     $(this).popover(OctoPrint.coreui.viewmodels.uICustomizerViewModel.iconSearchPopover($this.find('i'),function(newicon,newcolor){
                         if (self.isCustom(targetID)){
-                            $this.find('i').attr('class',newicon);
                             // Update using the view
                             if (newicon !== false){
+                                $this.find('i').attr('class',newicon);
+                                $this.prev().val(newicon);
                                 self.settings.customMon[targetID].icon(newicon);
                             }else{
+                                $this.find('i').attr('class','');
+                                $this.prev().val('');
                                 self.settings.customMon[targetID].icon('');
                             }
                         }else{
