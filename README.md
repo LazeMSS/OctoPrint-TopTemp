@@ -34,6 +34,7 @@ or manually using this URL:
 
 ## Configuration
 Install and read the onscreen information - it should be pretty self-explanatory else play with it :) 
+![](extras/configuration.png)<br/>
 
 ## Custom commands special
 The custom commands allow you to run any OS command by entering a command into the “Command” field. There is a Test button that will run the command and let you validate the returned data. At the moment the returned data has to be a number (float or integer) and will be fixed
