@@ -2,8 +2,8 @@
 /*
 Notes:
 Monitors:
-    - USE psutil python module : https://plugins.octoprint.org/plugins/resource_monitor/
-        Cpu percentage
+    - USE psutil python like: https://plugins.octoprint.org/plugins/resource_monitor/
+        Cpu percentage etc.
     - Wifi signal
     - Disk space
     - Fan speed
@@ -12,6 +12,7 @@ Monitors:
 
 Settings:
     - small fonts options
+    - Set lowpoint for graph
 
 - icon color?
 */
@@ -101,9 +102,9 @@ $(function() {
                         axisY:{
                             showLabel:false,
                             showGrid: false,
-                            low: 0,
+                            low: 0, // Todo - add support setting low point
                             padding: 0,
-                             offset: 0
+                            offset: 0
                         },
                         showPoint: false,
                         lineSmooth: false,
@@ -554,7 +555,8 @@ $(function() {
 
             // Add icon picker from UI Customizer if present
             if ('uICustomizerViewModel' in OctoPrint.coreui.viewmodels){
-                $('#settings_plugin_toptemp .UICShowIconPicker').popover('destroy').removeAttr('Title');
+                // Cleanup
+                $('#settings_plugin_toptemp .UICShowIconPicker').popover('destroy').removeAttr('title').removeData('original-title').removeAttr('data-original-title');
                 $('#settings_plugin_toptemp .UICShowIconPicker').each(function(){
                     var $this = $(this);
                     var targetCon = $this.closest('div.tab-pane');
@@ -576,7 +578,7 @@ $(function() {
                                 self.settings[targetID].icon('');
                             }
                         }
-                    },true,false,false,targetCon,'left')).attr('Title','Click to change icon');
+                    },true,false,false,targetCon,'left')).attr('title','Click to change icon');
                 });
             }else{
                 $('#settings_plugin_toptemp .UICShowIconPicker').off('click.TopTempPlugin').on('click.TopTempPlugin',function(event){
