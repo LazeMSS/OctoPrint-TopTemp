@@ -17,7 +17,9 @@ Settings:
     - max width for graph/display
     - Custom option to set as not a temperature (no fahrenheit conversion and check for number)
     - Custom option postfix label (rpm etc)
-    -
+    - thousand seperator option
+    - Icons: https://github.com/LazeMSS/OctoPrint-TopTemp/issues/5
+
 
 - icon color?
 */
@@ -189,12 +191,7 @@ $(function() {
             return value;
         }
 
-        // Get updated data from the "feeds"
-        self.fromCurrentData = function(data){
-            if (self.updatePaused){
-                return;
-            }
-
+        self.genericStart = function(){
             // Init it all
             if (!self.started){
                 self.started = true;
@@ -205,6 +202,7 @@ $(function() {
                 if (self.prevOpMode && self.settings.hideInactiveTemps()){
                     $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
                 }
+                $('#navbar_plugin_toptemp div.TopTempPrinter').removeClass('TopTempLoad');
                 self.prevOpMode = false;
             }else{
                 if (!self.prevOpMode && self.settings.hideInactiveTemps()){
@@ -212,6 +210,18 @@ $(function() {
                 }
                 self.prevOpMode = true;
             }
+        }
+
+        // Get updated data from the "feeds"
+        self.fromCurrentData = function(data){
+
+            if (self.updatePaused){
+                return;
+            }
+
+            // Init it all
+            self.genericStart();
+
             // Update temps if any data found and not hidden
             if (!data.temps.length || (!self.prevOpMode && self.settings.hideInactiveTemps())){
                 return;
@@ -235,6 +245,8 @@ $(function() {
             if (plugin != "toptemp"){
                 return;
             }
+            // Init it all
+            self.genericStart();
             if (!('success' in data) || data.success == false){
                 return;
             }
