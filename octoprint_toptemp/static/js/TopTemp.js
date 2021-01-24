@@ -10,15 +10,18 @@ Monitors:
 
 - Scroll/cycle view for multiple tools ?
 
+- Popover with more info
+
 Settings:
-    - Popover with more info
+    - Icons: https://github.com/LazeMSS/OctoPrint-TopTemp/issues/5
     - small fonts options
     - Set lowpoint for graph
     - max width for graph/display
+    - thousand seperator option
+
     - Custom option to set as not a temperature (no fahrenheit conversion and check for number)
     - Custom option postfix label (rpm etc)
-    - thousand seperator option
-    - Icons: https://github.com/LazeMSS/OctoPrint-TopTemp/issues/5
+
 
 
 - icon color?
@@ -42,17 +45,12 @@ $(function() {
 
         // Pause updating of the UI
         self.updatePaused = false;
-        // Was we running
-        self.prevOpMode = true;
 
         self.mainTypes = ['bed','chamber'];
 
         self.cusPrefix = 'cu';
 
         self.customHistory = {};
-
-        //
-        self.started = false;
 
         // Process data and format it
         self.FormatTempHTML = function(name, data, customType){
@@ -65,7 +63,7 @@ $(function() {
             var iSettings = self.getSettings(name);
 
             // Do know this or want it shown
-            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget())){
+            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget()) || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true)){
                 $('#navbar_plugin_toptemp_'+name).hide();
                 return;
             }else{
@@ -191,39 +189,13 @@ $(function() {
             return value;
         }
 
-        self.genericStart = function(){
-            // Init it all
-            if (!self.started){
-                self.started = true;
-                self.buildContainers();
-            }
-
-            if (!self.tempModel.isOperational()){
-                if (self.prevOpMode && self.settings.hideInactiveTemps()){
-                    $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
-                }
-                $('#navbar_plugin_toptemp div.TopTempPrinter').removeClass('TopTempLoad');
-                self.prevOpMode = false;
-            }else{
-                if (!self.prevOpMode && self.settings.hideInactiveTemps()){
-                    $('#navbar_plugin_toptemp div.TopTempPrinter').show();
-                }
-                self.prevOpMode = true;
-            }
-        }
-
         // Get updated data from the "feeds"
         self.fromCurrentData = function(data){
-
             if (self.updatePaused){
                 return;
             }
 
-            // Init it all
-            self.genericStart();
-
-            // Update temps if any data found and not hidden
-            if (!data.temps.length || (!self.prevOpMode && self.settings.hideInactiveTemps())){
+            if (!data.temps.length){
                 return;
             }
 
@@ -245,8 +217,7 @@ $(function() {
             if (plugin != "toptemp"){
                 return;
             }
-            // Init it all
-            self.genericStart();
+
             if (!('success' in data) || data.success == false){
                 return;
             }
@@ -341,7 +312,7 @@ $(function() {
 
             // Rebuild it all
             self.settingsSaved = false;
-            self.buildContainers();
+            self.buildContainers(false);
         }
 
 
@@ -822,6 +793,22 @@ $(function() {
                 $.getScript('/plugin/toptemp/static/js/Sortable.min.js');
             }
 
+            // Wait for the temperature model to be ready
+            var initSub = self.tempModel.isOperational.subscribe(function(state){
+                self.buildContainers(true);
+                // Remove ourselves
+                initSub.dispose();
+            })
+
+            // Main sub
+            self.tempModel.isOperational.subscribe(function(state){
+                if (state){
+                    $('#navbar_plugin_toptemp div.TopTempPrinter').show();
+                }else if(self.settings.hideInactiveTemps()){
+                    $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
+                }
+            });
+
             // Get history
             OctoPrint.simpleApiCommand("toptemp", "getCustomHistory", {}).done(function(response) {
                 self.customHistory = response;
@@ -829,7 +816,7 @@ $(function() {
         }
 
         // Build containers
-        self.buildContainers = function(){
+        self.buildContainers = function(firstRun){
             $('#navbar_plugin_toptemp').html('');
             var allItems = self.buildIconOrder();
             // Build containers
@@ -851,6 +838,10 @@ $(function() {
                     self.FormatTempHTML(k,{'actual' : v[v.length-1]},true);
                 }
             });
+            // Hide all non operationel
+            if (!firstRun && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true){
+                $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
+            }
         }
 
         self.isCustom = function(string){
