@@ -34,6 +34,10 @@
     margin-top: 5px;
 }
 
+#navbar_plugin_toptemp .leftPad{
+    padding-left: 3px;
+}
+
 .UICHeaderIcons #navbar_plugin_toptemp{
     margin-top: -6px;
 }

@@ -10,14 +10,16 @@ Monitors:
 
 - Scroll/cycle view for multiple tools ?
 
+- Popover with more info
+
 Settings:
-    - Popover with more info
+    - Icons: https://github.com/LazeMSS/OctoPrint-TopTemp/issues/5
     - small fonts options
     - Set lowpoint for graph
     - max width for graph/display
+    - thousand seperator option
     - Custom option to set as not a temperature (no fahrenheit conversion and check for number)
     - Custom option postfix label (rpm etc)
-    -
 
 - icon color?
 */
@@ -40,17 +42,12 @@ $(function() {
 
         // Pause updating of the UI
         self.updatePaused = false;
-        // Was we running
-        self.prevOpMode = true;
 
         self.mainTypes = ['bed','chamber'];
 
         self.cusPrefix = 'cu';
 
         self.customHistory = {};
-
-        //
-        self.started = false;
 
         // Process data and format it
         self.FormatTempHTML = function(name, data, customType){
@@ -63,7 +60,7 @@ $(function() {
             var iSettings = self.getSettings(name);
 
             // Do know this or want it shown
-            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget())){
+            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget()) || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true)){
                 $('#navbar_plugin_toptemp_'+name).hide();
                 return;
             }else{
@@ -81,7 +78,7 @@ $(function() {
                 graphE.show();
 
                 // Update the styles if settings are open
-                if (self.settingsOpen){
+                if (self.settingsOpen && self.previewOn){
                     self.setGraphStyle(name,iSettings.graphSettings);
                 }
 
@@ -129,27 +126,35 @@ $(function() {
             // Append actual data
             outputstr +=  self.formatTempLabel(name,data.actual,iSettings);
 
-            // Append target if different
-            if (!customType){
-                if (typeof data.target != undefined && data.target != data.actual && data.target > 0){
-                    // Show arrow
-                    if (iSettings.showTargetArrow()){
-                        if (data.target > data.actual){
-                            outputstr += '<i class="fas fa-caret-up TopTempArrow"></i>';
-                        }else if (data.target < data.actual){
-                            outputstr += '<i class="fas fa-caret-down TopTempArrow"></i>';
-                        }
+            // Append target if not custom type, we have a target and told to show it
+            if (!customType && typeof data.target != undefined && data.target > 0){
+                var offsetL = data.target - 0.5;
+                var offsetU = data.target + 0.5;
+                var ontarget = false;
+
+                // show arrows between temps
+                if (iSettings.showTargetArrow()){
+                    // Inside target margin
+                    if (data.actual >= offsetL && data.actual <= offsetU){
+                        ontarget = true;
+                    }else if (data.actual < offsetL){
+                        outputstr += '<i class="fas fa-caret-up TopTempArrow"></i>';
+                    }else if (data.actual > offsetU){
+                        outputstr += '<i class="fas fa-caret-down TopTempArrow"></i>';
                     }
-                    // Show target temp
-                    if (iSettings.showTargetTemp()){
-                        if (!iSettings.showTargetArrow()){
-                            outputstr += "/";
-                        }
-                        outputstr += self.formatTempLabel(name,data.target,iSettings);
-                    }
-                }else if(typeof data.target != undefined && data.target == data.actual && iSettings.showTargetArrow()){
-                    outputstr += '<i class="fas fa-flag-checkered"></i>';
                 }
+
+                // Show checkered if on target
+                if (ontarget){
+                    outputstr += '<i class="fas fa-flag-checkered leftPad"></i>';
+                }else if (iSettings.showTargetTemp()){
+                    // No arrow to seperate then we use text
+                    if (!iSettings.showTargetArrow()){
+                        outputstr += "/";
+                    }
+                    outputstr += self.formatTempLabel(name,data.target,iSettings);
+                }
+
             }
 
             // Should we add an icon
@@ -195,25 +200,7 @@ $(function() {
                 return;
             }
 
-            // Init it all
-            if (!self.started){
-                self.started = true;
-                self.buildContainers();
-            }
-
-            if (!self.tempModel.isOperational()){
-                if (self.prevOpMode && self.settings.hideInactiveTemps()){
-                    $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
-                }
-                self.prevOpMode = false;
-            }else{
-                if (!self.prevOpMode && self.settings.hideInactiveTemps()){
-                    $('#navbar_plugin_toptemp div.TopTempPrinter').show();
-                }
-                self.prevOpMode = true;
-            }
-            // Update temps if any data found and not hidden
-            if (!data.temps.length || (!self.prevOpMode && self.settings.hideInactiveTemps())){
+            if (!data.temps.length){
                 return;
             }
 
@@ -235,6 +222,7 @@ $(function() {
             if (plugin != "toptemp"){
                 return;
             }
+
             if (!('success' in data) || data.success == false){
                 return;
             }
@@ -329,7 +317,7 @@ $(function() {
 
             // Rebuild it all
             self.settingsSaved = false;
-            self.buildContainers();
+            self.buildContainers(false);
         }
 
 
@@ -810,6 +798,22 @@ $(function() {
                 $.getScript('/plugin/toptemp/static/js/Sortable.min.js');
             }
 
+            // Wait for the temperature model to be ready
+            var initSub = self.tempModel.isOperational.subscribe(function(state){
+                self.buildContainers(true);
+                // Remove ourselves
+                initSub.dispose();
+            })
+
+            // Main sub
+            self.tempModel.isOperational.subscribe(function(state){
+                if (state){
+                    $('#navbar_plugin_toptemp div.TopTempPrinter').show();
+                }else if(self.settings.hideInactiveTemps()){
+                    $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
+                }
+            });
+
             // Get history
             OctoPrint.simpleApiCommand("toptemp", "getCustomHistory", {}).done(function(response) {
                 self.customHistory = response;
@@ -817,7 +821,7 @@ $(function() {
         }
 
         // Build containers
-        self.buildContainers = function(){
+        self.buildContainers = function(firstRun){
             $('#navbar_plugin_toptemp').html('');
             var allItems = self.buildIconOrder();
             // Build containers
@@ -839,6 +843,10 @@ $(function() {
                     self.FormatTempHTML(k,{'actual' : v[v.length-1]},true);
                 }
             });
+            // Hide all non operationel
+            if (!firstRun && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true){
+                $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
+            }
         }
 
         self.isCustom = function(string){
@@ -889,7 +897,7 @@ $(function() {
             // Remove old
             $('#TopTempGraph_'+name+'_style').remove();
             // Build new
-            $('head').append('<style id="TopTempGraph_'+name+'_style">#TopTempGraph_'+name+'_graph{height:'+settings.height()+'%};#TopTempGraph_'+name+'_graph.TopTempGraph > svg >g .ct-line{stroke-width: '+settings.width()+'px; stroke-opacity: '+settings.opa()+'; stroke: '+settings.color()+';}</style>');
+            $('head').append('<style id="TopTempGraph_'+name+'_style">\n#TopTempGraph_'+name+'_graph{\nheight:'+settings.height()+'%\n}\n#TopTempGraph_'+name+'_graph.TopTempGraph > svg >g .ct-line{\nstroke-width: '+settings.width()+'px;\nstroke-opacity: '+settings.opa()+';\nstroke: '+settings.color()+';\n}\n</style>'    );
             // Show the graph?
             if (settings.show){
                 $('#TopTempGraph_'+name+'_graph').show();
