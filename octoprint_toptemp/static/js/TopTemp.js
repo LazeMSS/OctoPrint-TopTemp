@@ -692,7 +692,7 @@ $(function() {
                     $('div.modal-backdrop').css('top',$('#navbar').outerHeight()+'px');
                 }else{
                     // Restore sort order
-                    $.each(self.settings.sortOrder(),function(i,val){
+                    $.each(self.settings.sortOrder().reverse(),function(i,val){
                         $('#navbar_plugin_toptemp').append($('#navbar_plugin_toptemp_'+val));
                     });
                     self.fixMargins();

@@ -257,7 +257,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             # try and find thermal class by looking cpu-thermal temp
             code, out, err = self.runcommand("for i in /sys/class/thermal/thermal_zone*; do if grep -qi cpu-thermal $i/type && test -f $i/temp ; then echo $i/temp;exit 0; fi; done; exit 1")
             if not code and not err:
-                self.cpuTemps[out] = ["cat "+out+" | sed 's/\\(.\\)..$/.\\1/'",None,'CPU thermal zone']
+                self.cpuTemps[out] = ["awk '{print $0/1000}' "+out,None,'CPU thermal zone']
 
         # check all methods found
         for key in self.cpuTemps:
