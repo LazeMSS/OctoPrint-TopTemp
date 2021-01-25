@@ -78,7 +78,7 @@ $(function() {
                 graphE.show();
 
                 // Update the styles if settings are open
-                if (self.settingsOpen){
+                if (self.settingsOpen && self.previewOn){
                     self.setGraphStyle(name,iSettings.graphSettings);
                 }
 
@@ -889,7 +889,7 @@ $(function() {
             // Remove old
             $('#TopTempGraph_'+name+'_style').remove();
             // Build new
-            $('head').append('<style id="TopTempGraph_'+name+'_style">#TopTempGraph_'+name+'_graph{height:'+settings.height()+'%};#TopTempGraph_'+name+'_graph.TopTempGraph > svg >g .ct-line{stroke-width: '+settings.width()+'px; stroke-opacity: '+settings.opa()+'; stroke: '+settings.color()+';}</style>');
+            $('head').append('<style id="TopTempGraph_'+name+'_style">\n#TopTempGraph_'+name+'_graph{\nheight:'+settings.height()+'%\n}\n#TopTempGraph_'+name+'_graph.TopTempGraph > svg >g .ct-line{\nstroke-width: '+settings.width()+'px;\nstroke-opacity: '+settings.opa()+';\nstroke: '+settings.color()+';\n}\n</style>'    );
             // Show the graph?
             if (settings.show){
                 $('#TopTempGraph_'+name+'_graph').show();
