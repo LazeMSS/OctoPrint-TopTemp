@@ -35,6 +35,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.defaultConfig = {
             'firstRun' : True,
             'fahrenheit' : False,
+            'leftAlignIcons' : False,
             'hideInactiveTemps' : True,
             'noTools' : self.noTools,
             'sortOrder': ['bed','tool0','tool1','chamber','cu0'],

@@ -881,10 +881,14 @@ $(function() {
                 var prettyName = name.replace("tool", "Tool ");
                 prettyName = prettyName.charAt(0).toUpperCase() + prettyName.slice(1);
             }
+
+            if (self.settings.leftAlignIcons()){
+                className += " IconsLeft";
+            }
             // Remove old
             $('#'+elname).remove();
             // Build new
-            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text"></div></div>');
+            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="TopTempText"></div></div>');
             if (!settings.show()){
                 $('#'+elname).hide();
             }

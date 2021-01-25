@@ -53,6 +53,7 @@
 
 #navbar_plugin_toptemp div.TopTempPrinter, #navbar_plugin_toptemp div.TopTempCustom{
     position: relative;
+    height: 100%;
 }
 
 #navbar_plugin_toptemp div .TopTempIcon{
@@ -73,6 +74,24 @@
     position: absolute;
     width: 100%;
     padding: 0px;
+    top: 2px;
+}
+
+#navbar_plugin_toptemp div.TopTempText {
+    height: 100%;
+    margin-top: 4px;
+    position: relative;
+}
+/* align left - but not on small screens */
+@media (min-width: 768px){
+    #navbar_plugin_toptemp div.IconsLeft i.TopTempIcon{
+        display: inline-block !important;
+        padding-right: 5px;
+    }
+
+    #navbar_plugin_toptemp div.IconsLeft div.TopTempText{
+        margin-top: 14px;
+    }
 }
 
 #navbar_plugin_toptemp div.TopTempGraph .ct-line {
@@ -82,8 +101,8 @@
 }
 
 #navbar_plugin_toptemp .TopTempLoad{
-    height: 15px;
-    width: 20px;
+    height: 15px !important;
+    width: 20px !important;
 }
 #navbar_plugin_toptemp .TopTempLoad:before{
     content: "\f110";

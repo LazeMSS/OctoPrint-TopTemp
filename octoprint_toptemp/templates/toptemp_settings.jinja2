@@ -32,10 +32,17 @@
                     </label>
                 </div>
             </div>
-            <div class="control-group" title="Hide temperatures when not connected">
+            <div class="control-group" title="Align icons to the left of the readouts">
                 <div class="controls">
                     <label class="checkbox">
-                        <input type="checkbox" data-bind="checked: settings.plugins.toptemp.hideInactiveTemps"> {{ _('Hide temperatures when not operational') }}
+                        <input type="checkbox" data-bind="checked: settings.plugins.toptemp.leftAlignIcons"> {{ _('Align icons to the right') }}
+                    </label>
+                </div>
+            </div>
+            <div class="control-group" title="Hide printer temperatures when not connected">
+                <div class="controls">
+                    <label class="checkbox">
+                        <input type="checkbox" data-bind="checked: settings.plugins.toptemp.hideInactiveTemps"> {{ _('Hide printer temperatures when not operational') }}
                     </label>
                 </div>
             </div>
