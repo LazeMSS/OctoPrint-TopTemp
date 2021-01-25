@@ -126,27 +126,35 @@ $(function() {
             // Append actual data
             outputstr +=  self.formatTempLabel(name,data.actual,iSettings);
 
-            // Append target if different
-            if (!customType){
-                if (typeof data.target != undefined && data.target != data.actual && data.target > 0){
-                    // Show arrow
-                    if (iSettings.showTargetArrow()){
-                        if (data.target > data.actual){
-                            outputstr += '<i class="fas fa-caret-up TopTempArrow"></i>';
-                        }else if (data.target < data.actual){
-                            outputstr += '<i class="fas fa-caret-down TopTempArrow"></i>';
-                        }
+            // Append target if not custom type, we have a target and told to show it
+            if (!customType && typeof data.target != undefined && data.target > 0){
+                var offsetL = data.target - 0.5;
+                var offsetU = data.target + 0.5;
+                var ontarget = false;
+
+                // show arrows between temps
+                if (iSettings.showTargetArrow()){
+                    // Inside target margin
+                    if (data.actual >= offsetL && data.actual <= offsetU){
+                        ontarget = true;
+                    }else if (data.actual < offsetL){
+                        outputstr += '<i class="fas fa-caret-up TopTempArrow"></i>';
+                    }else if (data.actual > offsetU){
+                        outputstr += '<i class="fas fa-caret-down TopTempArrow"></i>';
                     }
-                    // Show target temp
-                    if (iSettings.showTargetTemp()){
-                        if (!iSettings.showTargetArrow()){
-                            outputstr += "/";
-                        }
-                        outputstr += self.formatTempLabel(name,data.target,iSettings);
-                    }
-                }else if(typeof data.target != undefined && data.target == data.actual && iSettings.showTargetArrow()){
-                    outputstr += '<i class="fas fa-flag-checkered"></i>';
                 }
+
+                // Show checkered if on target
+                if (ontarget){
+                    outputstr += '<i class="fas fa-flag-checkered leftPad"></i>';
+                }else if (iSettings.showTargetTemp()){
+                    // No arrow to seperate then we use text
+                    if (!iSettings.showTargetArrow()){
+                        outputstr += "/";
+                    }
+                    outputstr += self.formatTempLabel(name,data.target,iSettings);
+                }
+
             }
 
             // Should we add an icon
