@@ -164,8 +164,6 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                     newCust[ckey] = newData
                     newMonCmd = True
                 else:
-                    # self._logger.info("Merging old data from: %s ",ckey)
-                    newCust[ckey] = custOld[ckey].copy()
                     # New command
                     if 'cmd' in newData and custOld[ckey]['cmd'] != newData['cmd']:
                         newMonCmd = True
@@ -174,7 +172,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                         newMonCmd = True
 
                     # Assign new
-                    newCust[ckey].update(newData)
+                    newCust[ckey] = self._merge_dictionaries(custOld[ckey].copy(),newData.copy())
 
             # new timer need
             if newMonCmd == True:
