@@ -13,7 +13,6 @@ Monitors:
 - Popover with more info
 
 Settings:
-    - Icons: https://github.com/LazeMSS/OctoPrint-TopTemp/issues/5
     - small fonts options
     - Set lowpoint for graph
     - max width for graph/display
@@ -254,9 +253,9 @@ $(function() {
                 });
                 // put deleted at the end
                 $.each(self.settings.customMon,function(i,v){
-                    // Remove from sort
-                    $('#TopTempSortList >div[data-sortid="'+i+'"]').remove();
                     if (i in self.deleteCust){
+                        // Remove from sort
+                        $('#TopTempSortList >div[data-sortid="'+i+'"]').remove();
                         // console.log("Deleting: " + i);
                         self.settings.customMon[i]['delThis'](true);
                         self.settings.customMon[i]['updated'](new Date().getTime());
@@ -281,7 +280,6 @@ $(function() {
             // Clean the UI always to get it recreated
             $.each(self.tempNewCust,function(i,v){
                 // console.log("CLEAN UP UI TEMP: "+v);
-                $('#TopTempSortList >div[data-sortid="'+v+'"]').remove();
                 $('#settings_toptemp_'+v).remove();
             });
 
@@ -298,7 +296,6 @@ $(function() {
             // Clean ui for deletion
             $.each(self.deleteCust,function(i,v){
                 // console.log("CLEAN UP DELETE: "+i);
-                $('#TopTempSortList >div[data-sortid="'+i+'"]').remove();
                 $('#settings_toptemp_'+i).remove();
             });
             self.deleteCust = {};
