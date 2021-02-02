@@ -9,10 +9,12 @@ from octoprint.server import user_permission
 import os.path
 from os import path
 
+
 import sys
 import flask
 import subprocess
 import psutil
+import time
 
 class TopTempPlugin(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.SettingsPlugin,
@@ -35,6 +37,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.defaultConfig = {
             'firstRun' : True,
             'fahrenheit' : False,
+            'leftAlignIcons' : False,
             'hideInactiveTemps' : True,
             'noTools' : self.noTools,
             'sortOrder': ['bed','tool0','tool1','chamber','cu0'],
@@ -51,6 +54,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.tempTemplate = {
             'updated' : None,
             'show' : True,
+            'showPopover' : True,
             'hideOnNoTarget': False,
             'showTargetTemp' : True,
             'showTargetArrow' : True,
@@ -256,7 +260,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             # try and find thermal class by looking cpu-thermal temp
             code, out, err = self.runcommand("for i in /sys/class/thermal/thermal_zone*; do if grep -qi cpu-thermal $i/type && test -f $i/temp ; then echo $i/temp;exit 0; fi; done; exit 1")
             if not code and not err:
-                self.cpuTemps[out] = ["cat "+out+" | sed 's/\\(.\\)..$/.\\1/'",None,'CPU thermal zone']
+                self.cpuTemps[out] = ["awk '{print $0/1000}' "+out,None,'CPU thermal zone']
 
         # check all methods found
         for key in self.cpuTemps:
@@ -319,14 +323,15 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         else:
             # append to history
             if out.replace('.','',1).isdigit():
+                resultData = [time.time(),float(out)]
                 if indx not in self.customHistory:
                     self.customHistory[indx] = []
-                self.customHistory[indx].append(float(out))
+                self.customHistory[indx].append(resultData)
                 # slice of 200
-                self.customHistory[indx] = self.customHistory[indx][-200:]
+                self.customHistory[indx] = self.customHistory[indx][-300:]
 
                 # send to the frontend
-                self._plugin_manager.send_plugin_message(self._identifier, dict(success=True,error=err,returnCode=code,result=out,key=indx))
+                self._plugin_manager.send_plugin_message(self._identifier, dict(success=True,error=err,returnCode=code,result=resultData,key=indx))
 
     # Available commands and parameters
     # testCmd: will run any command

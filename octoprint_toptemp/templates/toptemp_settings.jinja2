@@ -32,10 +32,17 @@
                     </label>
                 </div>
             </div>
-            <div class="control-group" title="Hide temperatures when not connected">
+            <div class="control-group" title="Align icons to the left of the readouts">
                 <div class="controls">
                     <label class="checkbox">
-                        <input type="checkbox" data-bind="checked: settings.plugins.toptemp.hideInactiveTemps"> {{ _('Hide temperatures when not operational') }}
+                        <input type="checkbox" data-bind="checked: settings.plugins.toptemp.leftAlignIcons"> {{ _('Align icons to the left') }}
+                    </label>
+                </div>
+            </div>
+            <div class="control-group" title="Hide printer temperatures when not connected">
+                <div class="controls">
+                    <label class="checkbox">
+                        <input type="checkbox" data-bind="checked: settings.plugins.toptemp.hideInactiveTemps"> {{ _('Hide printer temperatures when not operational') }}
                     </label>
                 </div>
             </div>
@@ -68,14 +75,21 @@
                     </label>
                 </div>
             </div>
-            <div class="control-group" title="Hide if no target temperature is set">
-                <div class="controls">
-                    <label class="checkbox">
-                        <input type="checkbox" data-bind="checked: settings.plugins.toptemp.bed.hideOnNoTarget"> {{ _('Hide if no target temperature is set') }}
-                    </label>
-                </div>
-            </div>
             <div data-bind="visible: settings.plugins.toptemp.bed.show">
+                <div class="control-group" title="Hide if no target temperature is set">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: settings.plugins.toptemp.bed.hideOnNoTarget"> {{ _('Hide if no target temperature is set') }}
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group" title="Show popover with a temperature graph when mouse hovers over the top bar item">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: settings.plugins.toptemp.bed.showPopover"> {{ _('Show overlay with more details on mouse hover') }}
+                        </label>
+                    </div>
+                </div>
                 <div class="control-group" title="Show the target temperature">
                     <div class="controls">
                         <label class="checkbox">
@@ -194,14 +208,21 @@
                     </label>
                 </div>
             </div>
-            <div class="control-group" title="Hide if no target temperature is set">
-                <div class="controls">
-                    <label class="checkbox">
-                        <input type="checkbox" data-bind="checked: settings.plugins.toptemp.chamber.hideOnNoTarget"> {{ _('Hide if no target temperature is set') }}
-                    </label>
-                </div>
-            </div>
             <div data-bind="visible: settings.plugins.toptemp.chamber.show">
+                <div class="control-group" title="Hide if no target temperature is set">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: settings.plugins.toptemp.chamber.hideOnNoTarget"> {{ _('Hide if no target temperature is set') }}
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group" title="Show popover with a temperature graph when mouse hovers over the top bar item">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: settings.plugins.toptemp.chamber.showPopover"> {{ _('Show overlay with more details on mouse hover') }}
+                        </label>
+                    </div>
+                </div>
                 <div class="control-group" title="Show the target temperature">
                     <div class="controls">
                         <label class="checkbox">
@@ -320,14 +341,21 @@
                     </label>
                 </div>
             </div>
-            <div class="control-group" title="Hide if no target temperature is set">
-                <div class="controls">
-                    <label class="checkbox">
-                        <input type="checkbox" data-bind="checked: $parent.settings.plugins.toptemp['tool'+$index()].hideOnNoTarget"> {{ _('Hide if no target temperature is set') }}
-                    </label>
-                </div>
-            </div>
             <div data-bind="visible: $parent.settings.plugins.toptemp['tool'+$index()].show">
+                <div class="control-group" title="Hide if no target temperature is set">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: $parent.settings.plugins.toptemp['tool'+$index()].hideOnNoTarget"> {{ _('Hide if no target temperature is set') }}
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group" title="Show popover with a temperature graph when mouse hovers over the top bar item">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: $parent.settings.plugins.toptemp['tool'+$index()].showPopover"> {{ _('Show overlay with more details on mouse hover') }}
+                        </label>
+                    </div>
+                </div>
                 <div class="control-group" title="Show the target temperature">
                     <div class="controls">
                         <label class="checkbox">
@@ -493,6 +521,13 @@
             </div>
             <div data-visible="show">
                 <h4>Display settings</h4>
+                <div class="control-group" title="Show popover with a temperature graph when mouse hovers over the top bar item">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-settings="showPopover"> {{ _('Show overlay with more details on mouse hover') }}
+                        </label>
+                    </div>
+                </div>
                 <div class="control-group" title="Show temperature unit symbol">
                     <div class="controls">
                         <label class="checkbox">
@@ -581,7 +616,7 @@
                 </div>
             </div>
             <div class="control-group text-center">
-                <br><br>
+                <br>
                 <button type="button" class="TopTempDelete btn btn-danger"><i class="fas fa-trash"></i> <span>Delete</span></button>
             </div>
         </div>
