@@ -44,6 +44,7 @@ $(function() {
         self.mainTypes = ['bed','chamber'];
 
         self.customHistory = {};
+        self.jsLoaded = false;
 
         self.popoverOpen = false;
 
@@ -668,7 +669,7 @@ $(function() {
                 }
                 OctoPrint.simpleApiCommand("toptemp", "getDefaultSettings", {}).done(function(response) {
                     self.tempNewCust.push(newid);
-                    self.settings.customMon[newid] = ko.mapping.fromJS({...{'new' :  ko.observable(true), 'delThis' :  ko.observable(false)}, ...response });
+                    self.settings.customMon[newid] = ko.mapping.fromJS(Object.assign({'new':ko.observable(true), 'delThis': ko.observable(false)}, response ));
                     self.settings.customMon[newid]['name']('Custom '+cmindex);
                     // Build it all again
                     self.buildCustomSettings();
@@ -800,17 +801,34 @@ $(function() {
 
         // UI ready
         self.onAllBound = function(){
+
             $('#navbar_plugin_toptemp').addClass('navbar-text');
             // Include chartist if not included by others
             if (typeof Chartist != "object"){
+                self.jsLoaded = false;
                 $('head').append('<link rel="stylesheet" href="/plugin/toptemp/static/css/chartist.min.css">');
-                $.getScript('/plugin/toptemp/static/js/chartist.min.js');
-                $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js');
+                $.getScript('/plugin/toptemp/static/js/chartist.min.js',function(){
+                   $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js',function(){
+                        self.jsLoaded = true;
+                        self.onAllBound();
+                   });
+                });
             }else if(typeof Chartist.plugins.ctAxisTitle != "function"){
-                $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js');
+                self.jsLoaded = false;
+                $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js',function(){
+                    self.jsLoaded = true;
+                    self.onAllBound();
+                });
             }
+
+            // We dont wait for this :)
             if (typeof Sortable != "function"){
                 $.getScript('/plugin/toptemp/static/js/Sortable.min.js');
+            }
+
+            // Wait for js
+            if (!self.jsLoaded){
+                return;
             }
 
             // Wait for the temperature model to be ready
