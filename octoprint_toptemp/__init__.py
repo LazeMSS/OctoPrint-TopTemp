@@ -9,10 +9,12 @@ from octoprint.server import user_permission
 import os.path
 from os import path
 
+
 import sys
 import flask
 import subprocess
 import psutil
+import time
 
 class TopTempPlugin(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.SettingsPlugin,
@@ -52,6 +54,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.tempTemplate = {
             'updated' : None,
             'show' : True,
+            'showPopover' : True,
             'hideOnNoTarget': False,
             'showTargetTemp' : True,
             'showTargetArrow' : True,
@@ -320,14 +323,15 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         else:
             # append to history
             if out.replace('.','',1).isdigit():
+                resultData = [time.time(),float(out)]
                 if indx not in self.customHistory:
                     self.customHistory[indx] = []
-                self.customHistory[indx].append(float(out))
+                self.customHistory[indx].append(resultData)
                 # slice of 200
-                self.customHistory[indx] = self.customHistory[indx][-200:]
+                self.customHistory[indx] = self.customHistory[indx][-300:]
 
                 # send to the frontend
-                self._plugin_manager.send_plugin_message(self._identifier, dict(success=True,error=err,returnCode=code,result=out,key=indx))
+                self._plugin_manager.send_plugin_message(self._identifier, dict(success=True,error=err,returnCode=code,result=resultData,key=indx))
 
     # Available commands and parameters
     # testCmd: will run any command

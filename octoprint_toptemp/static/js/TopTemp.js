@@ -10,17 +10,16 @@ Monitors:
 
 - Scroll/cycle view for multiple tools ?
 
-- Popover with more info
-
 Settings:
+    Cleanup of the settings ux/ui - simplify
+    Popover:
+        - zoom/time length (popoverGHist) options for popover graph?
     - small fonts options
-    - Set lowpoint for graph
     - max width for graph/display
     - thousand seperator option
     - Custom option to set as not a temperature (no fahrenheit conversion and check for number)
     - Custom option postfix label (rpm etc)
-
-- icon color?
+    - icon/font color?
 */
 
 $(function() {
@@ -44,9 +43,12 @@ $(function() {
 
         self.mainTypes = ['bed','chamber'];
 
-        self.cusPrefix = 'cu';
-
         self.customHistory = {};
+
+        self.popoverOpen = false;
+
+        // How many seconds shall we plot back in the popover
+        self.popoverGHist = -600;
 
         // Process data and format it
         self.FormatTempHTML = function(name, data, customType){
@@ -84,11 +86,13 @@ $(function() {
                 // Plot the graph
                 var graphData = null;
                 if (customType){
+                    var reval = undefined;
                     if (name in self.customHistory && self.customHistory[name].length > 0){
-                        graphData =  {'series' : [self.customHistory[name]]};
+                        graphData =  {'series' : [self.customHistory[name].map(function(val,i){return val[1]})]};
                     }
                 }else{
-                    graphData = {'series' : [OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[name].actual.slice(-50).map(function(val,i){return val[1]})]};
+                    var reval = 0;
+                    graphData = {'series' : [OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[name].actual.slice(-200).map(function(val,i){return val[1]})]};
                 }
                 // DO we have what we need
                 if (graphData != null && typeof Chartist == "object"){
@@ -105,8 +109,11 @@ $(function() {
                             showGrid: false,
                             low: 0, // Todo - add support setting low point
                             padding: 0,
-                            offset: 0
+                            offset: 0,
+                            type: Chartist.AutoScaleAxis,
+                            referenceValue: reval
                         },
+                        fullWidth: true,
                         showPoint: false,
                         lineSmooth: false,
                         showGridBackground: false,
@@ -171,6 +178,9 @@ $(function() {
                     outputstr = '<i class="'+iSettings.icon() + iconcolor+' TopTempIcon"></i>' + outputstr;
                 }
             }
+
+            self.updatePopover(name,customType,iSettings);
+
             // Now output
             targetE.html(outputstr);
         }
@@ -182,7 +192,7 @@ $(function() {
             }
             var formatSymbol = "C";
             if (self.settings.fahrenheit()){
-                value = (value * 1.8) + 32;
+                value = self.convertToF(value);
                 formatSymbol = "F";
             }
             value = Number.parseFloat(value).toFixed(iSettings.noDigits());
@@ -191,6 +201,12 @@ $(function() {
                 value += '&#176;'+formatSymbol;
             }
             return value;
+        }
+
+        // Convert to US
+        self.convertToF = function(val){
+             return ((val * 1.8) + 32);
+
         }
 
         // Get updated data from the "feeds"
@@ -229,7 +245,7 @@ $(function() {
                 self.customHistory[data.key] = [];
             }
             self.customHistory[data.key].push(data.result);
-            self.FormatTempHTML(data.key,{'actual' : data.result},true);
+            self.FormatTempHTML(data.key,{'actual' : data.result[1]},true);
         }
 
         self.onSettingsBeforeSave = function(){
@@ -348,7 +364,7 @@ $(function() {
         self.buildCustomSettings = function(){
              // build custom monitors - poor mans dynamic ko
             $('#TopTempSettingCustomMenu ul.dropdown-menu > li.TopTempCustMenu').remove();
-            var template = $($('#settings_toptemp_customTemplate').wrap('p').parent().clone().html())
+            var template = $($('#settings_toptemp_customTemplate').clone().wrap('p').parent().html());
             if (Object.keys(self.settings.customMon).length){
                 $('#TopTempSettingCustomMenu ul.dropdown-menu li.divider').show();
             }else{
@@ -500,12 +516,7 @@ $(function() {
             var allItems = self.buildIconOrder();
             $.each(allItems,function(i,name){
                 var settings = self.getSettings(name);
-                if (self.isCustom(name)){
-                    var prettyName = settings.name();
-                }else{
-                    var prettyName = name.replace("tool", "Tool ");
-                    prettyName = prettyName.charAt(0).toUpperCase() + prettyName.slice(1);
-                }
+                var prettyName = self.getTempName(name);
                 // Skip non active - hackish
                 var classNameHide = '';
                 var iconVis = 'fa-eye';
@@ -636,6 +647,9 @@ $(function() {
 
             // Delete temporay items just to make sure
             self.tempNewCust = [];
+
+            // hide popovers
+            $('#navbar_plugin_toptemp >div').popover('hide');
 
             // Build custom settings
             self.buildCustomSettings();
@@ -786,10 +800,14 @@ $(function() {
 
         // UI ready
         self.onAllBound = function(){
+            $('#navbar_plugin_toptemp').addClass('navbar-text');
             // Include chartist if not included by others
             if (typeof Chartist != "object"){
                 $('head').append('<link rel="stylesheet" href="/plugin/toptemp/static/css/chartist.min.css">');
                 $.getScript('/plugin/toptemp/static/js/chartist.min.js');
+                $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js');
+            }else if(typeof Chartist.plugins.ctAxisTitle != "function"){
+                $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js');
             }
             if (typeof Sortable != "function"){
                 $.getScript('/plugin/toptemp/static/js/Sortable.min.js');
@@ -815,6 +833,14 @@ $(function() {
             OctoPrint.simpleApiCommand("toptemp", "getCustomHistory", {}).done(function(response) {
                 self.customHistory = response;
             });
+
+            // Resize handling
+            $(window).off('resize.toptemp').on('resize.toptemp',function(){
+                if (self.popoverOpen){
+                    self.popoverOpen = false;
+                    $('#navbar_plugin_toptemp >div').popover('hide');
+                }
+            });
         }
 
         // Build containers
@@ -837,12 +863,254 @@ $(function() {
             // Get data from history
             $.each(self.customHistory,function(k,v){
                 if ($('#navbar_plugin_toptemp_'+k).length){
-                    self.FormatTempHTML(k,{'actual' : v[v.length-1]},true);
+                    self.FormatTempHTML(k,{'actual' : v[v.length-1][1]},true);
                 }
             });
             // Hide all non operationel
             if (!firstRun && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true){
                 $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
+            }
+
+            // Make popovers with more information
+            $('#navbar_plugin_toptemp >div').popover('destroy').removeAttr('title').removeData('original-title').removeAttr('data-original-title');
+            $('#navbar_plugin_toptemp >div').each(function(){
+                var $this = $(this);
+                var $isCustom = $this.data('toptempcust');
+                var $thisID = $this.data('toptempid');
+                var isettings = self.getSettings($thisID);
+                var UICTopFix = '';
+                if ('uICustomizerViewModel' in OctoPrint.coreui.viewmodels){
+                    UICTopFix = ' UICFix';
+                }
+                // Hide or not
+                if (!isettings.showPopover()){
+                    return;
+                }
+
+                // Initial creation
+                if (!$this.data('popover') != null || !$this.data('popover').enabled){
+                    $this.popover({
+                        'trigger': 'manual',
+                        'placement' : 'bottom',
+                        'container': '#page-container-main',
+                        'html' : true,
+                        'template':'<div class="popover toptempPopover'+UICTopFix+'"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
+                        'title' : function(){
+                            var iconClone = $this.find('i.TopTempIcon:first');
+                            var iconstr = '';
+                            if (iconClone.length){
+                                iconstr = iconClone.clone().addClass('pull-right').wrap('<p>').parent().html()
+                            }
+                            return self.getTempName($thisID)+iconstr;
+                        },
+                        'content': '<div id="TopTempPopoverText_'+$thisID+'" class="TopTempPopoverText">Wait&hellip;</div><div id="TopTempPopoverGraph_'+$thisID+'" class="TopTempPopoverGraph"></div>'
+                    });
+                }
+
+                // Show the popover and update content
+                $this.off('mouseenter').on('mouseenter',function(){
+                    // Fix offset problems
+                    $this.popover('show');
+                    self.popoverOpen = true;
+                    // Fix arrows hacks for small screens
+                    if ($(window).width() <=767){
+                        $this.data('popover').tip().find('div.arrow').css('left',$this.offset().left+($this.outerWidth()/2)-11);
+                    }else{
+                        $this.data('popover').tip().find('div.arrow').css('left','');
+                    }
+                    // Build contents
+                    self.updatePopover($thisID,$isCustom,isettings);
+                }).off('mouseleave').on('mouseleave',function(){
+                    self.popoverOpen = false;
+                    $this.popover('hide');
+                }).attr('title',"Show more information");
+            });
+        }
+
+        self.updatePopover = function($thisID,$isCustom,iSettings){
+            var mainItem = $('#navbar_plugin_toptemp_'+$thisID);
+            // Check if open or not
+            if (mainItem.data('popover') == null || !mainItem.data('popover').tip().hasClass('in')){
+                return;
+            }
+
+            // update title by calling the original one
+            mainItem.data('popover').tip().find('h3.popover-title').html(mainItem.data('popover').options.title());
+
+            // Show target/actual
+            if ($('#TopTempPopoverText_'+$thisID).length){
+                if ($isCustom){
+                    if ($thisID in self.customHistory){
+                        var actual = self.customHistory[$thisID][self.customHistory[$thisID].length-1][1];
+                        var output = '<div class="pull-right"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div>';
+                        $('#TopTempPopoverText_'+$thisID).html(output);
+                    }
+                }else{
+                    var actual = OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].actual[OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].actual.length-1][1];
+                    var target = OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].target[OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].target.length-1][1];
+                    var output = '<div class="pull-left"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div><div class="pull-right"><small>Target: ';
+                    if (target == 0){
+                        output += 'Off';
+                    }else{
+                        output += self.formatTempLabel($thisID,target,iSettings);
+                    }
+                    output += '</small></div>';
+                    $('#TopTempPopoverText_'+$thisID).html(output);
+                }
+            }
+
+            // No chartist found or graph found
+            if (!$('#TopTempPopoverGraph_'+$thisID).length || typeof Chartist != "object"){
+                return;
+            }
+
+            var varHigh = undefined;
+            var graphData = null;
+            var fconvert = self.settings.fahrenheit();
+            if (fconvert){
+                var ylabel = 'Temp. °F';
+            }else{
+                var ylabel = 'Temp. °C';
+            }
+
+            // Custom data or not?
+            if ($isCustom){
+                var reval = undefined;
+                // No data?!
+                if (!($thisID in self.customHistory) || self.customHistory[$thisID].length == 0){
+                    return;
+                }
+                var temp = [...self.customHistory[$thisID]];
+                temp.reverse();
+                var series = [];
+                // Custom uses seconds and not milliseconds
+                var nowTs = Math.round(Date.now() / 1000);
+                $.each(temp,function(x,val){
+                    var seconds = val[0]-nowTs;
+                    // only get last 10 min
+                    if (seconds < self.popoverGHist){
+                        return false;
+                    }
+                    var yval = val[1];
+                    if (fconvert){
+                        yval = self.convertToF(yval);
+                    }
+                    series.push({y:yval,x:seconds});
+                })
+                // Assign it
+                graphData = {
+                    'series' : [{'data':series,'className':'ct-series-a'}]
+                };
+            }else{
+                var reval = 0;
+                // Set height after tooltype
+                if ($thisID[0] == "t"){
+                    varHigh = 400;
+                }else{
+                    varHigh = 100;
+                }
+
+                // Wrapper for mapping data
+                var nowTs = Date.now();
+                var buildSeries = function(temp){
+                    temp.reverse();
+                    var series = [];
+                    $.each(temp,function(x,val){
+                        var seconds = Math.round((val[0]-nowTs)/1000);
+                        // only get last 10 min
+                        if (seconds < self.popoverGHist){
+                            return false;
+                        }
+                        var yval = val[1];
+                        if (fconvert){
+                            yval = self.convertToF(yval);
+                        }
+                        series.push({y:yval,x:seconds});
+                    });
+                    return series;
+                }
+                // Assign it
+                graphData = {
+                    'series' : [
+                        {'data':buildSeries([...OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].actual]),'className':'ct-series-a'},
+                        {'data':buildSeries([...OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].target]),'className':'ct-series-g'},
+                    ]
+                };
+            }
+
+            // Now build it
+            var options = {
+                axisX: {
+                    offset: 0,
+                    position: 'end',
+                    labelOffset: {
+                        x: 0,
+                        y: 0
+                    },
+                    showLabel: true,
+                    showGrid: true,
+                    divisor: 10,
+                    labelInterpolationFnc: function(value) {
+                        return Math.round((value/60) * 10) / 10;
+                    },
+                    type: Chartist.FixedScaleAxis,
+                    onlyInteger: true
+                },
+                axisY: {
+                    offset: 25,
+                    position: 'start',
+                    labelOffset: {
+                        x: 8,
+                        y: 5
+                    },
+                    showLabel: true,
+                    showGrid: true,
+                    type: Chartist.AutoScaleAxis,
+                    scaleMinSpace: 20,
+                    onlyInteger: true,
+                    referenceValue: reval
+                },
+                showLine: true,
+                showPoint: false,
+                showArea: false,
+                lineSmooth: Chartist.Interpolation.cardinal({
+                    fillHoles: true,
+                }),
+                low: 0,
+                high: varHigh,
+                chartPadding: {
+                    top: 15,
+                    right: 0,
+                    bottom:30,
+                    left: 10
+                },
+                fullWidth: true,
+                plugins: [
+                    Chartist.plugins.ctAxisTitle({
+                        axisX: {
+                            axisTitle: "Minutes",
+                            axisClass: "ct-axis-title",
+                            offset: {
+                                x: 0,
+                                y: 30
+                            },
+                            textAnchor: "middle"
+                        },
+                        axisY: {
+                            axisTitle: ylabel,
+                            axisClass: "ct-axis-title",
+                            offset: {
+                                x: 10,
+                                y: 10
+                            },
+                            flipTitle: true
+                        }
+                    })
+                ]
+            };
+            // DO we have what we need
+            if (graphData != null){
+                new Chartist.Line('#TopTempPopoverGraph_'+$thisID, graphData,options)
             }
         }
 
@@ -872,25 +1140,35 @@ $(function() {
         self.buildContainer = function(name,className){
             var elname = 'navbar_plugin_toptemp_'+name;
             var settings = self.getSettings(name);
+            // Get name
+            prettyName = self.getTempName(name);
+            // Set type
+            var isCust = false;
             if (self.isCustom(name)){
-                var prettyName = settings.name();
-            }else{
-                var prettyName = name.replace("tool", "Tool ");
-                prettyName = prettyName.charAt(0).toUpperCase() + prettyName.slice(1);
+                isCust = true;
             }
-
             if (self.settings.leftAlignIcons()){
                 className += " IconsLeft";
             }
             // Remove old
             $('#'+elname).remove();
             // Build new
-            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="TopTempText"></div></div>');
+            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'" data-toptempid="'+name+'" data-toptempcust="'+isCust+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="TopTempText"></div></div>');
             if (!settings.show()){
                 $('#'+elname).hide();
             }
             self.setGraphStyle(name,settings.graphSettings);
             return elname;
+        }
+
+        self.getTempName = function(name){
+            if (self.isCustom(name)){
+                var prettyName = self.getSettings(name).name();
+            }else{
+                var prettyName = name.replace("tool", "Tool ");
+                prettyName = prettyName.charAt(0).toUpperCase() + prettyName.slice(1);
+            }
+            return prettyName;
         }
 
         // Add CSS for the graphs
