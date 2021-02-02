@@ -593,7 +593,7 @@ $(function() {
                 $('#settings_plugin_toptemp .UICShowIconPicker').off('click.TopTempPlugin').on('click.TopTempPlugin',function(event){
                     new PNotify({
                         title: 'Instal UI Customizer',
-                        text: 'In order to use the icon picker please install my UI Customizer plugin.<br><a target="_new" href="https://github.com/LazeMSS/OctoPrint-UICustomizer/">More...</a>',
+                        text: 'In order to use the icon picker please install the UI Customizer plugin.<br><a target="_new" href="https://github.com/LazeMSS/OctoPrint-UICustomizer/">More...</a>',
                         type: "notice",
                         hide: false
                     });
@@ -806,19 +806,27 @@ $(function() {
             // Include chartist if not included by others
             if (typeof Chartist != "object"){
                 self.jsLoaded = false;
+                // Set css
                 $('head').append('<link rel="stylesheet" href="/plugin/toptemp/static/css/chartist.min.css">');
+                // Load the plugin
                 $.getScript('/plugin/toptemp/static/js/chartist.min.js',function(){
-                   $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js',function(){
-                        self.jsLoaded = true;
-                        self.onAllBound();
-                   });
+                    // Retry
+                    self.jsLoaded = true;
+                    self.onAllBound();
                 });
-            }else if(typeof Chartist.plugins.ctAxisTitle != "function"){
+                return;
+            }
+            // Check for plugin
+            if('plugins' in Chartist && 'ctAxisTitle' in Chartist.plugins){
+                self.jsLoaded = true;
+            }else{
+                // Load the plugin
                 self.jsLoaded = false;
                 $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js',function(){
                     self.jsLoaded = true;
                     self.onAllBound();
                 });
+                return;
             }
 
             // We dont wait for this :)
