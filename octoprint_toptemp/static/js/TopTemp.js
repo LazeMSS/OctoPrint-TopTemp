@@ -8,11 +8,13 @@ Monitors:
     - Disk space
     - Fan speed
 
+- Gcode monitor
+
 - Scroll/cycle view for multiple tools ?
 
 Settings:
-    Cleanup of the settings ux/ui - simplify
-    Popover:
+    - Cleanup of the settings ux/ui - simplify
+    - Popover:
         - zoom/time length (popoverGHist) options for popover graph?
     - small fonts options
     - max width for graph/display
@@ -986,7 +988,7 @@ $(function() {
             }
 
             // No chartist found or graph found
-            if (!$('#TopTempPopoverGraph_'+$thisID).length || typeof Chartist != "object"){
+            if (!$('#TopTempPopoverGraph_'+$thisID).length || typeof Chartist != "object" || !('plugins' in Chartist) || !('ctAxisTitle' in Chartist.plugins)){
                 return;
             }
 

@@ -460,6 +460,17 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             )
         )
 
+    def gCodeHandlerSent(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
+        self._logger.info("Just got: {cmd}".format(**locals()))
+        commandAsString = octoprint.util.to_native_str(cmd)
+        self._logger.info(commandAsString)
+        return
+
+    def gCodeHandlerRecv(self, comm, line, *args, **kwargs):
+        self._logger.info(comm)
+        self._logger.info(line)
+        return line
+
 
 __plugin_name__ = "Top Temp"
 __plugin_pythoncompat__ = ">=2.7,<4"
@@ -471,4 +482,6 @@ def __plugin_load__():
     global __plugin_hooks__
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+        # "octoprint.comm.protocol.gcode.sent": __plugin_implementation__.gCodeHandlerSent,
+        # "octoprint.comm.protocol.gcode.received": __plugin_implementation__.gCodeHandlerRecv,
     }
