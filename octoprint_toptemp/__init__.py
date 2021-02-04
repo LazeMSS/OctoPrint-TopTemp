@@ -14,6 +14,7 @@ import sys
 import flask
 import subprocess
 import psutil
+import re
 import time
 
 class TopTempPlugin(octoprint.plugin.StartupPlugin,
@@ -29,6 +30,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.customHistory = {}
         # List of cpu temp methods found
         self.cpuTemps = {}
+
+        self.regExp105Probe = r"P:(\d+\.?\d*)"
+        self.regExp105Amb = r"A:(\d+\.?\d*)"
 
         # base config
         # customMon is all the custom monitoring items index by "customN" - a bit of a hackish way
@@ -460,15 +464,24 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             )
         )
 
-    def gCodeHandlerSent(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
-        self._logger.info("Just got: {cmd}".format(**locals()))
-        commandAsString = octoprint.util.to_native_str(cmd)
-        self._logger.info(commandAsString)
-        return
-
     def gCodeHandlerRecv(self, comm, line, *args, **kwargs):
+        # https://github.com/OctoPrint/OctoPrint/blob/f67c15a9a47794a68be9aed4f2d5a12a87e70179/src/octoprint/util/comm.py#L2517
+        self._logger.info("-------------------RECV")
         self._logger.info(comm)
         self._logger.info(line)
+        if (
+            " T:" in line
+            or line.startswith("T:")
+            or " T0:" in line
+            or line.startswith("T0:")
+        ):
+            self._logger.info("-------------------RECV TEMP")
+            match = re.search(self.regExp105Probe, line)
+            if match:
+                self._logger.info("-------------------PROBE: %s",match.group(1))
+            match = re.search(self.regExp105Amb, line)
+            if match:
+                self._logger.info("-------------------AMB: %s",match.group(1))
         return line
 
 
@@ -481,7 +494,6 @@ def __plugin_load__():
 
     global __plugin_hooks__
     __plugin_hooks__ = {
-        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
-        # "octoprint.comm.protocol.gcode.sent": __plugin_implementation__.gCodeHandlerSent,
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
         # "octoprint.comm.protocol.gcode.received": __plugin_implementation__.gCodeHandlerRecv,
     }
