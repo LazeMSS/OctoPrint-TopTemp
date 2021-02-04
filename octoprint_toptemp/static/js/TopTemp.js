@@ -21,7 +21,7 @@ Settings:
     - thousand seperator option
     - Custom option to set as not a temperature (no fahrenheit conversion and check for number)
     - Custom option postfix label (rpm etc)
-    - icon/font color?
+    - icon/font color
 */
 
 $(function() {
@@ -803,37 +803,50 @@ $(function() {
 
         // UI ready
         self.onAllBound = function(){
-
+            // Set class
             $('#navbar_plugin_toptemp').addClass('navbar-text');
-            // Include chartist if not included by others
+
+            // Get history to make the UI update with the last data seen
+            OctoPrint.simpleApiCommand("toptemp", "getCustomHistory", {}).done(function(response) {
+                self.customHistory = response;
+            });
+
+            // Include chartist if not included already
             if (typeof Chartist != "object"){
-                self.jsLoaded = false;
-                // Set css
                 $('head').append('<link rel="stylesheet" href="/plugin/toptemp/static/css/chartist.min.css">');
-                // Load the plugin
-                $.getScript('/plugin/toptemp/static/js/chartist.min.js',function(){
+                self.jsLoaded = false;
+                var script = document.createElement('script');
+                script.onload = function () {
                     // Retry
                     self.jsLoaded = true;
                     self.onAllBound();
-                });
+                };
+                script.src = '/plugin/toptemp/static/js/chartist.min.js';
+                document.body.appendChild(script);
                 return;
             }
+
             // Check for plugin
             if('plugins' in Chartist && 'ctAxisTitle' in Chartist.plugins){
                 self.jsLoaded = true;
             }else{
-                // Load the plugin
-                self.jsLoaded = false;
-                $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js',function(){
+                // Load the js
+                var script = document.createElement('script');
+                script.onload = function () {
+                    // Retry
                     self.jsLoaded = true;
                     self.onAllBound();
-                });
+                };
+                script.src = '/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js';
+                document.body.appendChild(script);
                 return;
             }
 
             // We dont wait for this :)
             if (typeof Sortable != "function"){
-                $.getScript('/plugin/toptemp/static/js/Sortable.min.js');
+                var script = document.createElement('script');
+                script.src = '/plugin/toptemp/static/js/Sortable.min.js';
+                document.body.appendChild(script);
             }
 
             // Wait for js
@@ -841,14 +854,7 @@ $(function() {
                 return;
             }
 
-            // Wait for the temperature model to be ready
-            var initSub = self.tempModel.isOperational.subscribe(function(state){
-                self.buildContainers(true);
-                // Remove ourselves
-                initSub.dispose();
-            })
-
-            // Main sub
+            // Update printer operational
             self.tempModel.isOperational.subscribe(function(state){
                 if (state){
                     $('#navbar_plugin_toptemp div.TopTempPrinter').show();
@@ -857,10 +863,9 @@ $(function() {
                 }
             });
 
-            // Get history
-            OctoPrint.simpleApiCommand("toptemp", "getCustomHistory", {}).done(function(response) {
-                self.customHistory = response;
-            });
+
+            // Build containers
+            self.buildContainers(true);
 
             // Resize handling
             $(window).off('resize.toptemp').on('resize.toptemp',function(){
@@ -883,6 +888,7 @@ $(function() {
                 }
                 if (self.isCustom(name)){
                     self.buildContainer(name,'TopTempCustom TopTempLoad');
+
                 }else{
                     self.buildContainer(name,'TopTempPrinter TopTempLoad');
                 }
@@ -894,8 +900,9 @@ $(function() {
                     self.FormatTempHTML(k,{'actual' : v[v.length-1][1]},true);
                 }
             });
+
             // Hide all non operationel
-            if (!firstRun && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true){
+            if (!firstRun && self.settings.hideInactiveTemps() && (!('isOperational' in self.tempModel) || self.tempModel.isOperational() !== true)){
                 $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
             }
 
