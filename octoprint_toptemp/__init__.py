@@ -534,7 +534,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             self.handleCustomData(indx,out,time.time())
 
     # Trigger by the timer
-    def runPSUtil(self,indx,cmd):
+    def runPSUtil(self,indx,cmd,returnData = False):
         # 'cpup'      : ['CPU usage percentage'],
         # 'cpuf'      : ['CPU frequency in GHz'],
         # 'loadavg1'  : ['Average system load last 1 minute'],
@@ -614,6 +614,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # Return if we found something now
         if returnVal:
             self.debugOut("psutil " + cmd + " returned: " + str(returnVal) + " for index :"+indx)
+            if returnData:
+                return returnVal;
             self.handleCustomData(indx,returnVal,time.time())
 
         # Disk
@@ -654,7 +656,12 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         if returnVal:
             self.debugOut("psutil " + cmd + " returned: " + str(returnVal) + " for index :"+indx)
+            if returnData:
+                return returnVal;
             self.handleCustomData(indx,returnVal,time.time())
+
+        if returnData:
+                return None;
 
     def handleCustomData(self,indx,out,time):
         self.debugOut("Got custom data: " + str(out))
@@ -714,6 +721,15 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
          # Get history data
         if command == "testCmd":
             cmdInput = data["cmd"]
+            cmdType = data["type"]
+            if cmdType == "psutil":
+                result = self.runPSUtil("TEST",cmdInput,True)
+                if result:
+                    repsonse = dict(success=True,error=None,returnCode=200,result=result)
+                else:
+                    repsonse = dict(success=False,error="No data returned",returnCode=404,result=None)
+                return flask.jsonify(repsonse)
+
             cmd = cmdInput.split(" ", 1)
             cmdFound = True
 
@@ -734,7 +750,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 if code or err:
                     repsonse = dict(success=False,error=err,returnCode=code,result=out)
                 else:
-                    if out.replace('.','',1).isdigit():
+                    if isinstance(out,(float, int)) or str(out).replace('.','',1).isdigit():
                         repsonse = dict(success=True,error=err,returnCode=code,result=out)
                     else:
                         repsonse = dict(success=False,error="Not an value",returnCode=code,result=out)

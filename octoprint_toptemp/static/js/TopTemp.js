@@ -572,15 +572,17 @@ $(function() {
             // Test a command
             $('#settings_plugin_toptemp a.toptempTestCMD').off('click.toptem').on('click.toptem',function(){
                 var $this = $(this);
+                var pane = $this.closest('div.tab-pane');
                 var cmdRun = $this.closest('div.input-append').find('input').val();
-                var outputCon = $this.closest('div.tab-pane').find('div.toptempTestCMDOutContainer');
+                var cmdtype = pane.find('select[data-custommon="type"]').val();
+                var outputCon = pane.find('div.toptempTestCMDOutContainer');
                 var output = outputCon.find('div.toptempTestCMDOutput');
                 if ($.trim(cmdRun) == ""){
                     return;
                 }
                 $this.attr( "disabled", true );
                 output.html('<div class="alert alert-info"><strong>Wait...</strong></div>');
-                OctoPrint.simpleApiCommand("toptemp", "testCmd", {'cmd':cmdRun}).done(function(response) {
+                OctoPrint.simpleApiCommand("toptemp", "testCmd", {'cmd':cmdRun,'type' : cmdtype}).done(function(response) {
                     if (!('success' in response) || response.success == false){
                         output.html('<div class="alert alert-error"><strong>Error</strong><br><pre>Error:\n<span class="text-error">  '+response.error+'</span>\nResult:\n<span class="text-error">  '+response.result+'</span>\nCode:\n<span class="text-error">  '+response.returnCode+'</span>\n</pre></div>');
                     }else{
