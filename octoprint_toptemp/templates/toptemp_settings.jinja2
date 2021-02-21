@@ -474,6 +474,7 @@
     </div>
 
     <div class="tab-pane" id="settings_toptemp_customTemplate">
+            <input type="hidden" value="True" data-settings="show" />
             <h4></h4>
             <div class="control-group">
                 <label class="control-label">Name</label>
@@ -482,57 +483,89 @@
                 </div>
             </div>
             <div class="control-group">
-                <label class="control-label">Command</label>
+                <label class="control-label">Type</label>
                 <div class="controls">
-                    <div class="input-append">
-                        <input type="text" class="input-xlarge" data-custommon="cmd" placeholder="command" required>
-                        <div class="btn-group">
-                            <a class="btn toptempTestCMD">Test</a>
-                            <button class="btn dropdown-toggle" data-toggle="dropdown" tabindex="-1">
-                                Predefined
-                                <span class="caret"></span>
-                            </button>
-                            <ul class="dropdown-menu topTempPreDefCmds">
-                            </ul>
-                        </div>
-                    </div>
-                    <span class="help-inline">What command to execute to get data, should return a number</span>
+                    <select data-custommon="type">
+                        <option value="cmd" selected="selected">Command</option>
+                        <option value="gcIn">From printer</option>
+                        <option value="gcOut">GCode sent</option>
+                        <option value="psutil">Server data</option>
+                    </select>
+                    <span class="help-inline">
+                        "Command" is a command executed on the RPI/PC. "GCode sent" will look at the GCode sent to the printer and return a value based on the reg. exp.
+                        "From printer" will look at the data returned from the printer and return a value based on the reg. exp. "Server data" will get data from RPI/PC.
+                    </span>
                 </div>
             </div>
-            <div class="toptempTestCMDOutContainer control-group hide">
+            <div class="control-group">
+                <label class="control-label"><span class="topTempShowCMD">Command</span><span class="topTempShowGC">Regexp</span><span class="topTempShowPS">Item</span></label>
+                <div class="controls">
+                    <div class="input-append">
+                        <span class="input-xlarge uneditable-input topTempShowPS topTempPSUtilView"></span>
+                        <input type="text" class="input-xlarge topTempShowCMD topTempShowGC" data-custommon="cmd" required>
+                        <div class="btn-group">
+                            <a class="btn toptempTestCMD topTempShowCMD topTempShowPS">Test</a>
+                            <button class="btn dropdown-toggle" data-toggle="dropdown" tabindex="-1">
+                                <span class="topTempShowGC topTempShowCMD">Predefined</span><span class="topTempShowPS">Select</span>
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu topTempPreDefCmds"></ul>
+                        </div>
+                    </div>
+                    <span class="help-inline">What command/regexp to execute to get data, should return a number</span>
+                </div>
+            </div>
+            <div class="topTempShowCMD topTempShowPS toptempTestCMDOutContainer control-group hide">
                <label class="control-label">Test result</label>
                 <div class="controls">
                     <div class="toptempTestCMDOutput"></div>
                 </div>
             </div>
-            <div class="control-group" title="Interval for execution">
+            <div class="control-group topTempShowCMD topTempShowPS" title="Interval for execution">
                <label class="control-label">Run interval</label>
                 <div class="controls">
                     <input type="number" min="1" max="86400" step="1" data-custommon="interval">
                     <span class="help-inline">How often shall the command be executed, in seconds.</span>
                 </div>
             </div>
-            <div class="control-group" title="Show the temperature in top bar">
+
+            <div class="control-group" title="Only display when printer is printing">
                 <div class="controls">
                     <label class="checkbox">
-                        <input type="checkbox" data-settings="show"> {{ _('Show the  temperature in top bar') }}
+                        <input type="checkbox" data-settings="waitForPrint"> {{ _('Only show while printer is printing') }}
                     </label>
                 </div>
             </div>
+
+            <div class="control-group" title="Is the input value a temperature?">
+                <div class="controls">
+                    <label class="checkbox">
+                        <input type="checkbox" data-settings="isTemp"> {{ _('Input is a temperature value') }}
+                    </label>
+                </div>
+            </div>
+
             <div data-visible="show">
                 <h4>Display settings</h4>
-                <div class="control-group" title="Show popover with a temperature graph when mouse hovers over the top bar item">
+                <div class="control-group" title="Show popover with a graph when mouse hovers over the top bar item">
                     <div class="controls">
                         <label class="checkbox">
                             <input type="checkbox" data-settings="showPopover"> {{ _('Show overlay with more details on mouse hover') }}
                         </label>
                     </div>
                 </div>
-                <div class="control-group" title="Show temperature unit symbol">
+                <div class="control-group" data-visible="isTemp" title="Show temperature unit symbol">
                     <div class="controls">
                         <label class="checkbox">
                             <input type="checkbox" data-settings="showUnit"> {{ _('Show temperature unit symbol') }}
                         </label>
+                    </div>
+                </div>
+                <div class="control-group" title="Unit" data-visible="!isTemp">
+                    <label class="control-label">Unit</label>
+                    <div class="controls">
+                        <input type="text" data-settings="unit" placeholder="Unit: %, RPM, MB etc.">
+                        <span class="help-inline">Blank for no unit</span>
                     </div>
                 </div>
                 <div class="control-group" title="Label - blank for nothing">
@@ -563,11 +596,11 @@
                    <label class="control-label">Color change level</label>
                     <div class="controls">
                         <input type="number" min="0" step="any" data-settings="colorChangeLevel">
-                        <span class="help-inline">When the temperature reaches this number the color changes</span>
+                        <span class="help-inline">When the input reaches this number the color changes</span>
                     </div>
                 </div>
 
-                <div class="control-group" title="Number of digits show for temperature">
+                <div class="control-group" title="Number of digits">
                     <label class="control-label">Number of digits</label>
                     <div class="controls">
                         <input type="number" min="0" max="2" step="any" data-settings="noDigits">
@@ -580,10 +613,10 @@
                     </div>
                 </div>
                 <h4>{{ _('Background graph') }}</h4>
-                <div class="TopTempGraphSetting control-group" title="Show temperature graph backdrop">
+                <div class="TopTempGraphSetting control-group" title="Show graph backdrop">
                     <div class="controls">
                         <label class="checkbox">
-                            <input type="checkbox" data-settings="graphSettings.show"> {{ _('Show temperature graph backdrop') }}
+                            <input type="checkbox" data-settings="graphSettings.show"> {{ _('Show graph backdrop') }}
                         </label>
                     </div>
                 </div>

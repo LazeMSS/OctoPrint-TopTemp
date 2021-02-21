@@ -1,26 +1,4 @@
 /* TopTemp START */
-/*
-Notes:
-Monitors:
-    - USE psutil python like: https://plugins.octoprint.org/plugins/resource_monitor/
-        Cpu percentage etc.
-    - Wifi signal
-    - Disk space
-    - Fan speed
-
-- Scroll/cycle view for multiple tools ?
-
-Settings:
-    Cleanup of the settings ux/ui - simplify
-    Popover:
-        - zoom/time length (popoverGHist) options for popover graph?
-    - small fonts options
-    - max width for graph/display
-    - thousand seperator option
-    - Custom option to set as not a temperature (no fahrenheit conversion and check for number)
-    - Custom option postfix label (rpm etc)
-    - icon/font color?
-*/
 
 $(function() {
     function TopTempViewModel(parameters) {
@@ -28,6 +6,7 @@ $(function() {
 
         self.settingsViewModel = parameters[0];
         self.tempModel = parameters[1];
+        self.connection = parameters[2];
         self.settings = {};
 
         // Settings window open
@@ -45,11 +24,28 @@ $(function() {
 
         self.customHistory = {};
         self.jsLoaded = false;
+        self.firstBound = true;
 
         self.popoverOpen = false;
 
         // How many seconds shall we plot back in the popover
         self.popoverGHist = -600;
+
+        self.customCMDs = null;
+
+        self.customPSUs = null;
+
+        self.GcodePred = {
+            'gcIn' : {
+                'Probe temp' : '(?:T|T0):.*? P:([^ ]+)',
+                'Ambient temp' : '(?:T|T0):.*? A:([^ ]+)'
+            },
+            'gcOut': {
+                'Cooling fan speed' : '^M106.*?S([^ ]+)',
+                'Feedrate %' : '^M220 S([^ ]+)',
+                // 'Extruder feed rate' : '^(?:G0|G1).*?F([^ ]+)'
+            }
+        };
 
         // Process data and format it
         self.FormatTempHTML = function(name, data, customType){
@@ -62,7 +58,7 @@ $(function() {
             var iSettings = self.getSettings(name);
 
             // Do know this or want it shown
-            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget()) || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true)){
+            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget()) || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true) || ('waitForPrint' in iSettings && iSettings.waitForPrint() && !self.connection.isPrinting()) ){
                 $('#navbar_plugin_toptemp_'+name).hide();
                 return;
             }else{
@@ -83,22 +79,23 @@ $(function() {
                 if (self.settingsOpen && self.previewOn){
                     self.setGraphStyle(name,iSettings.graphSettings);
                 }
-
                 // Plot the graph
                 var graphData = null;
                 if (customType){
                     var reval = undefined;
+                    if (iSettings.isTemp()){
+                        reval = 0;
+                    }
                     if (name in self.customHistory && self.customHistory[name].length > 0){
                         graphData =  {'series' : [self.customHistory[name].map(function(val,i){return val[1]})]};
                     }
                 }else{
                     var reval = 0;
-                    graphData = {'series' : [OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[name].actual.slice(-200).map(function(val,i){return val[1]})]};
+                    graphData = {'series' : [OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[name].actual.slice(-300).map(function(val,i){return val[1]})]};
                 }
                 // DO we have what we need
                 if (graphData != null && typeof Chartist == "object"){
-                    new Chartist.Line('#TopTempGraph_'+name+'_graph', graphData,
-                    {
+                    var graphOptions =  {
                         axisX:{
                             showLabel:false,
                             showGrid: false,
@@ -108,19 +105,21 @@ $(function() {
                         axisY:{
                             showLabel:false,
                             showGrid: false,
-                            low: 0, // Todo - add support setting low point
                             padding: 0,
                             offset: 0,
+                            low: reval,
                             type: Chartist.AutoScaleAxis,
                             referenceValue: reval
                         },
+                        low: reval,
                         fullWidth: true,
                         showPoint: false,
                         lineSmooth: false,
                         showGridBackground: false,
                         chartPadding: 0,
                         labelOffset: 0
-                    });
+                    }
+                    new Chartist.Line('#TopTempGraph_'+name+'_graph', graphData,graphOptions);
                 }
             }
 
@@ -168,7 +167,7 @@ $(function() {
             if ($.trim(iSettings.icon()) !== ""){
                 iconcolor = '';
                 if (iSettings.colorIcons()){
-                    iconcolor = ' muted';
+                    iconcolor = ' text-info';
                     if (data.actual >= iSettings.colorChangeLevel()){
                         iconcolor = ' text-error';
                     }
@@ -188,14 +187,29 @@ $(function() {
 
         // Pretty format a temperature label
         self.formatTempLabel = function(name,value,iSettings){
+            // No value or not a temperature
             if (value == null){
                 return value;
             }
+            // NOt a temperature?
+            if('isTemp' in iSettings &&  iSettings.isTemp() == false){
+                // Fix digits
+                value = Number.parseFloat(value).toFixed(iSettings.noDigits());
+                value = value.replace(".",iSettings.decSep());
+                // Add unit
+                if (iSettings.unit() != ""){
+                    value += iSettings.unit();
+                }
+                return value;
+            }
+
+            // Temperature handling
             var formatSymbol = "C";
             if (self.settings.fahrenheit()){
                 value = self.convertToF(value);
                 formatSymbol = "F";
             }
+
             value = Number.parseFloat(value).toFixed(iSettings.noDigits());
             value = value.replace(".",iSettings.decSep());
             if (iSettings.showUnit()){
@@ -246,6 +260,7 @@ $(function() {
                 self.customHistory[data.key] = [];
             }
             self.customHistory[data.key].push(data.result);
+            self.customHistory[data.key] = self.customHistory[data.key].slice(-300);
             self.FormatTempHTML(data.key,{'actual' : data.result[1]},true);
         }
 
@@ -279,6 +294,11 @@ $(function() {
                     }
                 });
                 self.settings.sortOrder($('#TopTempSortList >div').map(function(){return $(this).data('sortid')}).get());
+
+                // Reload custom history
+                OctoPrint.simpleApiCommand("toptemp", "getCustomHistory", {}).done(function(response) {
+                    self.customHistory = response;
+                });
             }
         }
 
@@ -291,6 +311,7 @@ $(function() {
             $('div.modal-backdrop').css('top','');
             $('#TopTempSortList').data('sorter').destroy();
             $('#TopTempSortList').removeData('sorter');
+            $('body').removeClass('TopTemPreviewON');
             self.settingsOpen = false;
             self.previewOn = false;
 
@@ -331,7 +352,7 @@ $(function() {
 
             // Rebuild it all
             self.settingsSaved = false;
-            self.buildContainers(false);
+            self.buildContainers();
         }
 
 
@@ -382,7 +403,7 @@ $(function() {
                 $('#'+newId).find('h4:first').text(val.name()+" main settings");
 
                 // Observer input and set
-                $('#'+newId).find('input[data-settings]').each(function(){
+                $('#'+newId).find(':input[data-settings]').each(function(){
                     var $this = $(this);
                     var settingID = $this.data('settings');
                     // Recursive lookup the value
@@ -394,24 +415,30 @@ $(function() {
                         $this.prop('checked', curVal);
                         if (curVal){
                             $('#'+newId+' div[data-visible="'+settingID+'"]').show();
+                            $('#'+newId+' div[data-visible="!'+settingID+'"]').hide();
                         }else{
                             $('#'+newId+' div[data-visible="'+settingID+'"]').hide();
+                            $('#'+newId+' div[data-visible="!'+settingID+'"]').show();
                         }
                         $this.off('change.toptemp').on('change.toptemp',function(){
                             curItem($(this).prop('checked'));
                             // Hide/show related
                             if ($(this).prop('checked')){
                                 $('#'+newId+' div[data-visible="'+settingID+'"]').show();
+                                $('#'+newId+' div[data-visible="!'+settingID+'"]').hide();
                             }else{
                                 $('#'+newId+' div[data-visible="'+settingID+'"]').hide();
+                                $('#'+newId+' div[data-visible="!'+settingID+'"]').show();
                             }
                         });
                     }else{
                         $this.val(curVal);
                         if (curVal == ""){
                             $('#'+newId+' div[data-visible="'+settingID+'"]').hide();
+                            $('#'+newId+' div[data-visible="!'+settingID+'"]').show();
                         }else{
                             $('#'+newId+' div[data-visible="'+settingID+'"]').show();
+                            $('#'+newId+' div[data-visible="!'+settingID+'"]').hide();
                         }
                         // Fix icon selector
                         if (settingID == "icon"){
@@ -426,15 +453,17 @@ $(function() {
                             // Hide/show related
                             if ($(this).val() == ""){
                                 $('#'+newId+' div[data-visible="'+settingID+'"]').hide();
+                                $('#'+newId+' div[data-visible="!'+settingID+'"]').show();
                             }else{
                                 $('#'+newId+' div[data-visible="'+settingID+'"]').show();
+                                $('#'+newId+' div[data-visible="!'+settingID+'"]').hide();
                             }
                         });
                     }
                 })
 
                 // Observe custom mon fields
-                $('#'+newId).find('input[data-custommon]').each(function(){
+                $('#'+newId).find(':input[data-custommon]').each(function(){
                     var settingID = $(this).data('custommon');
                     // Recursive lookup the value
                     var curItem = self.settings.customMon[idx][settingID];
@@ -446,23 +475,95 @@ $(function() {
                         });
                     }else{
                         $(this).val(curVal);
-                        $(this).off('change.toptemp').on('change.toptemp',function(){
-                            // Set namee
-                            if (settingID == "name"){
+                        // Different handlers
+                        if (settingID == "name"){
+                            $(this).off('change.toptemp').on('change.toptemp',function(){
+                                var newVal = $(this).val();
+                                curItem(newVal);
+                                // Set the name in the drop down
                                 var tabPane = $(this).closest('div.tab-pane');
                                 var tabPID = tabPane.attr('id');
-                                if ($(this).val() == ""){
+                                if (newVal == ""){
                                     $('#TopTempSettingCustomMenu a[href="#'+tabPID+'"]').text(idx);
                                     tabPane.find('h4:first').text(idx+" main settings");
                                 }else{
                                     $('#TopTempSettingCustomMenu a[href="#'+tabPID+'"]').text($(this).val());
                                     tabPane.find('h4:first').text($(this).val()+" main settings");
                                 }
+                            });
+                        // Type
+                        }else if(settingID == "type"){
+                            var startVal = self.settings.customMon[idx]['cmd']()+"";
+                            if (curVal == "psutil" && startVal in self.customPSUs){
+                                $('#'+newId).find('.topTempPSUtilView').html(self.customPSUs[startVal][0]);
                             }
-                            curItem($(this).val());
-                        });
+                            $(this).off('change.toptemp').on('change.toptemp',function(){
+                                var newVal = $(this).val();
+                                var inputCMD = $('#'+newId).find('input[data-custommon="cmd"]');
+                                curItem(newVal);
+                                // Reset input if switching away from the current one
+                                if (curVal != $(this).val()){
+                                    inputCMD.val('');
+                                }else{
+                                    // Set to org value if stored
+                                    inputCMD.val(startVal);
+                                }
+                                // Build templates
+                                var cmdTemplate = $('#'+newId).find('.topTempPreDefCmds');
+                                cmdTemplate.find('li').remove();
+                                if (newVal == "cmd"){
+                                    // Show test button
+                                    $('#'+newId).find('.topTempShowGC,.topTempShowPS').hide();
+                                    $('#'+newId).find('.topTempShowCMD').show();
+                                    $('#'+newId).find('.toptempTestCMDOutContainer').hide();
+                                    if (self.customCMDs != null){
+                                        $.each(self.customCMDs,function(idx,val){
+                                            if (val[2] == null){
+                                                return;
+                                            }
+                                            var item = $('<li><a href="#" data->'+val[1]+'</a></li>');
+                                            item.on('click',function(){
+                                                $(this).closest('div.input-append').find('input').val(val[0]).trigger('change');
+                                            });
+                                            cmdTemplate.append(item);
+                                        });
+                                    }
+                                }else if (newVal == "psutil"){
+                                    $('#'+newId).find('.topTempShowGC,.topTempShowCMD').hide();
+                                    $('#'+newId).find('.topTempShowPS').show();
+                                    $('#'+newId).find('.toptempTestCMDOutContainer').hide();
+                                    if (self.customPSUs != null){
+                                        $.each(self.customPSUs,function(idx,val){
+                                            var item = $('<li><a href="#" data->'+val[0]+'</a></li>');
+                                            item.on('click',function(){
+                                                $('#'+newId).find('.topTempPSUtilView').html(val[0]);
+                                                $(this).closest('div.input-append').find('input').val(idx).trigger('change');
+                                            });
+                                            cmdTemplate.append(item);
+                                        });
+                                    }
+                                }else{
+                                    // Hide test button and other stuff
+                                    $('#'+newId).find('.topTempShowPS,.topTempShowCMD,.toptempTestCMDOutContainer').hide();
+                                    $('#'+newId).find('.topTempShowGC').show();
+                                    $.each(self.GcodePred[newVal],function(idx,val){
+                                        var item = $('<li><a href="#" data->'+idx+'</a></li>');
+                                        item.on('click',function(){
+                                            $(this).closest('div.input-append').find('input').val(val).trigger('change');
+                                        });
+                                        cmdTemplate.append(item);
+                                    })
+                                }
+                            });
+                        }else{
+                            // Default
+                            $(this).off('change.toptemp').on('change.toptemp',function(){
+                                curItem($(this).val());
+                            });
+                        }
                     }
                 })
+
                 // Add menu item
                 $('#TopTempSettingCustomMenu ul.dropdown-menu').prepend('<li class="TopTempCustMenu"><a data-toggle="tab" href="#'+newId+'">'+val.name()+'</a></li>')
             });
@@ -471,15 +572,17 @@ $(function() {
             // Test a command
             $('#settings_plugin_toptemp a.toptempTestCMD').off('click.toptem').on('click.toptem',function(){
                 var $this = $(this);
+                var pane = $this.closest('div.tab-pane');
                 var cmdRun = $this.closest('div.input-append').find('input').val();
-                var outputCon = $this.closest('div.tab-pane').find('div.toptempTestCMDOutContainer');
+                var cmdtype = pane.find('select[data-custommon="type"]').val();
+                var outputCon = pane.find('div.toptempTestCMDOutContainer');
                 var output = outputCon.find('div.toptempTestCMDOutput');
                 if ($.trim(cmdRun) == ""){
                     return;
                 }
                 $this.attr( "disabled", true );
                 output.html('<div class="alert alert-info"><strong>Wait...</strong></div>');
-                OctoPrint.simpleApiCommand("toptemp", "testCmd", {'cmd':cmdRun}).done(function(response) {
+                OctoPrint.simpleApiCommand("toptemp", "testCmd", {'cmd':cmdRun,'type' : cmdtype}).done(function(response) {
                     if (!('success' in response) || response.success == false){
                         output.html('<div class="alert alert-error"><strong>Error</strong><br><pre>Error:\n<span class="text-error">  '+response.error+'</span>\nResult:\n<span class="text-error">  '+response.result+'</span>\nCode:\n<span class="text-error">  '+response.returnCode+'</span>\n</pre></div>');
                     }else{
@@ -490,21 +593,6 @@ $(function() {
                     }
                     $this.attr('disabled',false);
                 });
-            });
-
-            // Get cpu options
-            OctoPrint.simpleApiCommand("toptemp", "getPredefined", {'reload':true}).done(function(response) {
-                $('#settings_plugin_toptemp .topTempPreDefCmds li').remove();
-                $.each(response,function(idx,val){
-                    if (val[1] == null){
-                        return;
-                    }
-                    var item = $('<li><a href="#" data->'+val[2]+'</a></li>');
-                    item.on('click',function(){
-                        $(this).closest('div.input-append').find('input').val(val[0]).trigger('change');
-                    });
-                    $('#settings_plugin_toptemp .topTempPreDefCmds').append(item);
-                })
             });
 
             // Delete prev sorter
@@ -639,6 +727,10 @@ $(function() {
                 self.deleteCust[tabPane.data('toptempcustomid')] = true;
                 $(this).find('span').text('Undo delete');
             });
+
+            // Make sure we are fine and ready
+            $('select[data-custommon="type"]').trigger('change.toptemp');
+            $('.toptempTestCMDOutContainer').hide();
         }
 
         // Init show
@@ -649,11 +741,26 @@ $(function() {
             // Delete temporay items just to make sure
             self.tempNewCust = [];
 
+
+            // Get cpu options if not defined
+            if (self.customCMDs == null){
+                OctoPrint.simpleApiCommand("toptemp", "getPredefined", {'reload':false}).done(function(response) {
+                    if ('cmds' in response){
+                        self.customCMDs = response.cmds;
+                    }
+                    if ('psutil' in response){
+                        self.customPSUs = response.psutil;
+                    }
+                    // Build custom settings
+                    self.buildCustomSettings();
+                });
+            }else{
+                 // Build custom settings
+                self.buildCustomSettings();
+            }
+
             // hide popovers
             $('#navbar_plugin_toptemp >div').popover('hide');
-
-            // Build custom settings
-            self.buildCustomSettings();
 
             // Revert active delete
             $('button.TopTempDelete.btn-success').trigger('click');
@@ -692,6 +799,7 @@ $(function() {
             $('#TopTempTogglePreview').off('click.TopTempPlugin').on('click.TopTempPlugin',function(event){
                 $(this).find('i').toggleClass('fa-check-square fa-square');
                 $(this).toggleClass('active');
+                $('body').toggleClass('TopTemPreviewON');
                 $('div.modal-backdrop').css('transition','top 0.1s linear');
                 self.previewOn = !self.previewOn;
                 if (self.previewOn){
@@ -801,37 +909,53 @@ $(function() {
 
         // UI ready
         self.onAllBound = function(){
-
+            // Set class
             $('#navbar_plugin_toptemp').addClass('navbar-text');
-            // Include chartist if not included by others
+
+            // Get history to make the UI update with the last data seen
+            if (self.firstBound){
+                self.firstBound = false;
+                OctoPrint.simpleApiCommand("toptemp", "getCustomHistory", {}).done(function(response) {
+                    self.customHistory = response;
+                });
+            }
+
+            // Include chartist if not included already
             if (typeof Chartist != "object"){
+                $('head').append('<link rel="stylesheet" href="./plugin/toptemp/static/css/chartist.min.css">');
                 self.jsLoaded = false;
-                // Set css
-                $('head').append('<link rel="stylesheet" href="/plugin/toptemp/static/css/chartist.min.css">');
-                // Load the plugin
-                $.getScript('/plugin/toptemp/static/js/chartist.min.js',function(){
+                var script = document.createElement('script');
+                script.onload = function () {
                     // Retry
                     self.jsLoaded = true;
                     self.onAllBound();
-                });
+                };
+                script.src = './plugin/toptemp/static/js/chartist.min.js';
+                document.body.appendChild(script);
                 return;
             }
+
             // Check for plugin
             if('plugins' in Chartist && 'ctAxisTitle' in Chartist.plugins){
                 self.jsLoaded = true;
             }else{
-                // Load the plugin
-                self.jsLoaded = false;
-                $.getScript('/plugin/toptemp/static/js/chartist-plugin-axistitle.min.js',function(){
+                // Load the js
+                var script = document.createElement('script');
+                script.onload = function () {
+                    // Retry
                     self.jsLoaded = true;
                     self.onAllBound();
-                });
+                };
+                script.src = './plugin/toptemp/static/js/chartist-plugin-axistitle.min.js';
+                document.body.appendChild(script);
                 return;
             }
 
             // We dont wait for this :)
             if (typeof Sortable != "function"){
-                $.getScript('/plugin/toptemp/static/js/Sortable.min.js');
+                var script = document.createElement('script');
+                script.src = '/plugin/toptemp/static/js/Sortable.min.js';
+                document.body.appendChild(script);
             }
 
             // Wait for js
@@ -839,14 +963,7 @@ $(function() {
                 return;
             }
 
-            // Wait for the temperature model to be ready
-            var initSub = self.tempModel.isOperational.subscribe(function(state){
-                self.buildContainers(true);
-                // Remove ourselves
-                initSub.dispose();
-            })
-
-            // Main sub
+            // Update printer operational
             self.tempModel.isOperational.subscribe(function(state){
                 if (state){
                     $('#navbar_plugin_toptemp div.TopTempPrinter').show();
@@ -855,10 +972,30 @@ $(function() {
                 }
             });
 
-            // Get history
-            OctoPrint.simpleApiCommand("toptemp", "getCustomHistory", {}).done(function(response) {
-                self.customHistory = response;
+            // Wait for print states to switch
+            self.connection.isPrinting.subscribe(function(state){
+                if (state){
+                    $('#navbar_plugin_toptemp div.TopTempWaitPrinter').show();
+                }else{
+                    $('#navbar_plugin_toptemp div.TopTempWaitPrinter').hide();
+                }
             });
+
+
+            // Get cpu options
+            if (self.customCMDs == null){
+                OctoPrint.simpleApiCommand("toptemp", "getPredefined", {'reload':false}).done(function(response) {
+                    if ('cmds' in response){
+                        self.customCMDs = response.cmds;
+                    }
+                    if ('psutil' in response){
+                        self.customPSUs = response.psutil;
+                    }
+                });
+            }
+
+            // Build containers
+            self.buildContainers();
 
             // Resize handling
             $(window).off('resize.toptemp').on('resize.toptemp',function(){
@@ -870,7 +1007,7 @@ $(function() {
         }
 
         // Build containers
-        self.buildContainers = function(firstRun){
+        self.buildContainers = function(){
             $('#navbar_plugin_toptemp').html('');
             var allItems = self.buildIconOrder();
             // Build containers
@@ -881,21 +1018,33 @@ $(function() {
                 }
                 if (self.isCustom(name)){
                     self.buildContainer(name,'TopTempCustom TopTempLoad');
+
                 }else{
                     self.buildContainer(name,'TopTempPrinter TopTempLoad');
                 }
             });
             self.fixMargins();
+
             // Get data from history
             $.each(self.customHistory,function(k,v){
                 if ($('#navbar_plugin_toptemp_'+k).length){
-                    self.FormatTempHTML(k,{'actual' : v[v.length-1][1]},true);
+                    if (v.length > 0){
+                        self.FormatTempHTML(k,{'actual' : v[v.length-1][1]},true);
+                    }
                 }
             });
+
             // Hide all non operationel
-            if (!firstRun && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true){
+            if (self.settings.hideInactiveTemps() && (!('isOperational' in self.tempModel) || self.tempModel.isOperational() !== true)){
                 $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
             }
+
+            if (self.connection.isPrinting()){
+                $('#navbar_plugin_toptemp div.TopTempWaitPrinter').show();
+            }else{
+                $('#navbar_plugin_toptemp div.TopTempWaitPrinter').hide();
+            }
+
 
             // Make popovers with more information
             $('#navbar_plugin_toptemp >div').popover('destroy').removeAttr('title').removeData('original-title').removeAttr('data-original-title');
@@ -904,10 +1053,6 @@ $(function() {
                 var $isCustom = $this.data('toptempcust');
                 var $thisID = $this.data('toptempid');
                 var isettings = self.getSettings($thisID);
-                var UICTopFix = '';
-                if ('uICustomizerViewModel' in OctoPrint.coreui.viewmodels){
-                    UICTopFix = ' UICFix';
-                }
                 // Hide or not
                 if (!isettings.showPopover()){
                     return;
@@ -920,7 +1065,7 @@ $(function() {
                         'placement' : 'bottom',
                         'container': '#page-container-main',
                         'html' : true,
-                        'template':'<div class="popover toptempPopover'+UICTopFix+'"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
+                        'template':'<div class="popover toptempPopover"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
                         'title' : function(){
                             var iconClone = $this.find('i.TopTempIcon:first');
                             var iconstr = '';
@@ -929,12 +1074,15 @@ $(function() {
                             }
                             return self.getTempName($thisID)+iconstr;
                         },
-                        'content': '<div id="TopTempPopoverText_'+$thisID+'" class="TopTempPopoverText">Wait&hellip;</div><div id="TopTempPopoverGraph_'+$thisID+'" class="TopTempPopoverGraph"></div>'
+                        'content': '<div id="TopTempPopoverText_'+$thisID+'" class="TopTempPopoverText clearfix">Wait&hellip;</div><div id="TopTempPopoverGraph_'+$thisID+'" class="TopTempPopoverGraph"></div>'
                     });
                 }
 
                 // Show the popover and update content
                 $this.off('mouseenter').on('mouseenter',function(){
+                    if ($this.hasClass('TopTempLoad')){
+                        return;
+                    }
                     // Fix offset problems
                     $this.popover('show');
                     self.popoverOpen = true;
@@ -947,6 +1095,9 @@ $(function() {
                     // Build contents
                     self.updatePopover($thisID,$isCustom,isettings);
                 }).off('mouseleave').on('mouseleave',function(){
+                    if ($this.hasClass('TopTempLoad')){
+                        return;
+                    }
                     self.popoverOpen = false;
                     $this.popover('hide');
                 }).attr('title',"Show more information");
@@ -968,7 +1119,7 @@ $(function() {
                 if ($isCustom){
                     if ($thisID in self.customHistory){
                         var actual = self.customHistory[$thisID][self.customHistory[$thisID].length-1][1];
-                        var output = '<div class="pull-right"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div>';
+                        var output = '<div class="pull-right"><small>Current: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div>';
                         $('#TopTempPopoverText_'+$thisID).html(output);
                     }
                 }else{
@@ -986,22 +1137,30 @@ $(function() {
             }
 
             // No chartist found or graph found
-            if (!$('#TopTempPopoverGraph_'+$thisID).length || typeof Chartist != "object"){
+            if (!$('#TopTempPopoverGraph_'+$thisID).length || typeof Chartist != "object" || !('plugins' in Chartist) || !('ctAxisTitle' in Chartist.plugins)){
                 return;
             }
 
             var varHigh = undefined;
             var graphData = null;
-            var fconvert = self.settings.fahrenheit();
-            if (fconvert){
-                var ylabel = 'Temp. °F';
+            var fconvert = false;
+            if (!$isCustom || iSettings.isTemp()){
+                fconvert = self.settings.fahrenheit();
+                if (fconvert){
+                    var ylabel = 'Temp. °F';
+                }else{
+                    var ylabel = 'Temp. °C';
+                }
             }else{
-                var ylabel = 'Temp. °C';
+                var ylabel = iSettings.name();
             }
 
             // Custom data or not?
             if ($isCustom){
                 var reval = undefined;
+                if (iSettings.isTemp()){
+                    reval = 0;
+                }
                 // No data?!
                 if (!($thisID in self.customHistory) || self.customHistory[$thisID].length == 0){
                     return;
@@ -1009,14 +1168,16 @@ $(function() {
                 var temp = [...self.customHistory[$thisID]];
                 temp.reverse();
                 var series = [];
+                var dataFound = 0;
                 // Custom uses seconds and not milliseconds
                 var nowTs = Math.round(Date.now() / 1000);
                 $.each(temp,function(x,val){
                     var seconds = val[0]-nowTs;
                     // only get last 10 min
-                    if (seconds < self.popoverGHist){
+                    if (seconds < self.popoverGHist && dataFound > 10){
                         return false;
                     }
+                    dataFound++;
                     var yval = val[1];
                     if (fconvert){
                         yval = self.convertToF(yval);
@@ -1041,12 +1202,14 @@ $(function() {
                 var buildSeries = function(temp){
                     temp.reverse();
                     var series = [];
+                    var dataFound = 0;
                     $.each(temp,function(x,val){
                         var seconds = Math.round((val[0]-nowTs)/1000);
                         // only get last 10 min
-                        if (seconds < self.popoverGHist){
+                        if (seconds < self.popoverGHist && dataFound > 10){
                             return false;
                         }
+                        dataFound++;
                         var yval = val[1];
                         if (fconvert){
                             yval = self.convertToF(yval);
@@ -1094,15 +1257,14 @@ $(function() {
                     type: Chartist.AutoScaleAxis,
                     scaleMinSpace: 20,
                     onlyInteger: true,
-                    referenceValue: reval
+                    referenceValue: reval,
+                    low: reval,
                 },
+                low: reval,
                 showLine: true,
                 showPoint: false,
                 showArea: false,
-                lineSmooth: Chartist.Interpolation.cardinal({
-                    fillHoles: true,
-                }),
-                low: 0,
+                lineSmooth: false,
                 high: varHigh,
                 chartPadding: {
                     top: 15,
@@ -1136,7 +1298,7 @@ $(function() {
             };
             // DO we have what we need
             if (graphData != null){
-                new Chartist.Line('#TopTempPopoverGraph_'+$thisID, graphData,options)
+                new Chartist.Line('#TopTempPopoverGraph_'+$thisID, graphData,options);
             }
         }
 
@@ -1172,6 +1334,9 @@ $(function() {
             var isCust = false;
             if (self.isCustom(name)){
                 isCust = true;
+                if (settings.waitForPrint()){
+                    className += " TopTempWaitPrinter";
+                }
             }
             if (self.settings.leftAlignIcons()){
                 className += " IconsLeft";
@@ -1231,7 +1396,7 @@ $(function() {
         // This is a list of dependencies to inject into the plugin, the order which you request here is the order
         // in which the dependencies will be injected into your view model upon instantiation via the parameters
         // argument
-        ["settingsViewModel","temperatureViewModel"],
+        ["settingsViewModel","temperatureViewModel","connectionViewModel"],
 
         // Finally, this is the list of all elements we want this view model to be bound to.
         []
