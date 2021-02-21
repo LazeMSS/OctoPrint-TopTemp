@@ -121,12 +121,6 @@
     }
 }
 
-#navbar_plugin_toptemp div.TopTempGraph .ct-line {
-    stroke-width: 1px;
-    stroke-opacity: 0.4;
-    stroke: #000;
-}
-
 #navbar_plugin_toptemp .TopTempLoad{
     height: 15px !important;
     width: 15px !important;
@@ -157,8 +151,19 @@ div.popover.toptempPopover {
     z-index: 1030;
 }
 
+#navbar_plugin_toptemp div.TopTempGraph .ct-line {
+    stroke-width: 1px;
+    stroke-opacity: 0.4;
+    stroke: #000;
+}
+
 div.TopTempPopoverGraph .ct-line {
     stroke-width: 1px;
+}
+
+/* firefox hack */
+div.TopTempPopoverGraph g.ct-labels foreignObject{
+    height: 15px;
 }
 
 div.popover.toptempPopover div.TopTempPopoverText{
