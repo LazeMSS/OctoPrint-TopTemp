@@ -56,6 +56,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         # Gcode handling
         self.gcodeQue = queue.Queue()
+        self.gcodeThread = None
         # Store all the actions to be handle for out/in gcode
         self.gcodeCmds = {'gcIn' : {}, 'gcOut':{}}
         self.gcodeCheckIn = False
@@ -110,7 +111,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     # ----------------------------------------------------------------------------------------------------------------
     def on_after_startup(self):
         self.initCustomMon()
-        threading.Thread(target=self.gcodeRecvQworker, daemon=True).start()
+        self.gcodeThread = threading.Thread(target=self.gcodeRecvQworker)
+        self.gcodeThread.daemon = True
+        self.gcodeThread.start()
         self._logger.info("TopTemp is initialized")
 
     def on_shutdown(self):
