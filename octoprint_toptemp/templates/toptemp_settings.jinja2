@@ -501,7 +501,7 @@
                 <label class="control-label"><span class="topTempShowCMD">Command</span><span class="topTempShowGC">Regexp</span><span class="topTempShowPS">Item</span></label>
                 <div class="controls">
                     <div class="input-append">
-                        <span class="input-xlarge uneditable-input topTempShowPS topTempPSUtilView"></span>
+                        <span class="input-xlarge uneditable-input topTempShowPS topTempPSUtilView"><em>Select from dropdown</em></span>
                         <input type="text" class="input-xlarge topTempShowCMD topTempShowGC" data-custommon="cmd" required>
                         <div class="btn-group">
                             <a class="btn toptempTestCMD topTempShowCMD topTempShowPS">Test</a>
@@ -526,6 +526,14 @@
                 <div class="controls">
                     <input type="number" min="1" max="86400" step="1" data-custommon="interval">
                     <span class="help-inline">How often shall the command be executed, in seconds.</span>
+                </div>
+            </div>
+
+            <div class="control-group" data-visible="!isTemp" title="This calculation will be perfomed on the returned value">
+               <label class="control-label">Post calculate</label>
+                <div class="controls">
+                    <input type="text" placeholder="Calc" data-custommon="postCalc">
+                    <span class="help-inline">This calculation will be perfomed on the returned value. X represent the value. Example: <code>X/255*100</code> to convert a number between 0 and 255 into percentage. Leave blank for no calculation.</span>
                 </div>
             </div>
 

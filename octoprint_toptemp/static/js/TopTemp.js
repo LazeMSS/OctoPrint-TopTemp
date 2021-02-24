@@ -194,6 +194,9 @@ $(function() {
             // NOt a temperature?
             if('isTemp' in iSettings &&  iSettings.isTemp() == false){
                 // Fix digits
+                if(iSettings.postCalc() != null){
+                   value = self.PostCalcProces(value,iSettings.postCalc());
+                }
                 value = Number.parseFloat(value).toFixed(iSettings.noDigits());
                 value = value.replace(".",iSettings.decSep());
                 // Add unit
@@ -222,6 +225,13 @@ $(function() {
         self.convertToF = function(val){
              return ((val * 1.8) + 32);
 
+        }
+
+        self.PostCalcProces = function(val,calc){
+            if (calc == null || calc == false || $.trim(calc) == ""){
+                return val;
+            }
+            return eval(calc.replace("X",val));
         }
 
         // Get updated data from the "feeds"
@@ -1181,6 +1191,10 @@ $(function() {
                     var yval = val[1];
                     if (fconvert){
                         yval = self.convertToF(yval);
+                    }
+                    // Post calculate the value
+                    if(!iSettings.isTemp() && iSettings.postCalc() != null){
+                        yval = self.PostCalcProces(yval,iSettings.postCalc());
                     }
                     series.push({y:yval,x:seconds});
                 })

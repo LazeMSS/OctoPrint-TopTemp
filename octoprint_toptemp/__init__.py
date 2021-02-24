@@ -56,6 +56,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         # Gcode handling
         self.gcodeQue = queue.Queue()
+        self.gcodeThread = None
         # Store all the actions to be handle for out/in gcode
         self.gcodeCmds = {'gcIn' : {}, 'gcOut':{}}
         self.gcodeCheckIn = False
@@ -103,14 +104,16 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         }
 
         # type can be cmd, gcIn, gcOut, psutil
-        self.defaultsCustom = {'cmd':'','name':'','interval': 25, 'type':'cmd', 'isTemp' : True , 'waitForPrint' : False, 'unit' : ''}
+        self.defaultsCustom = {'cmd':'','name':'','interval': 25, 'type':'cmd', 'isTemp' : True , 'waitForPrint' : False, 'unit' : '', 'postCalc' : None}
 
     # ----------------------------------------------------------------------------------------------------------------
     # Lets get started
     # ----------------------------------------------------------------------------------------------------------------
     def on_after_startup(self):
         self.initCustomMon()
-        threading.Thread(target=self.gcodeRecvQworker, daemon=True).start()
+        self.gcodeThread = threading.Thread(target=self.gcodeRecvQworker)
+        self.gcodeThread.daemon = True
+        self.gcodeThread.start()
         self._logger.info("TopTemp is initialized")
 
     def on_shutdown(self):
@@ -195,7 +198,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         for key in self.cpuTemps:
             if self.cpuTemps[key][1] != False:
-                self.debugOut("Appeding default CPU temp")
+                self.debugOut("Adding default CPU temp")
                 # Make template
                 temp = self._merge_dictionaries(self.tempTemplate.copy(),self.defaultsCustom.copy())
                 # Assign
@@ -213,13 +216,13 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 break
 
         # add default fan speed from gcode monitoring
-        self.debugOut("Appeding default fan speed")
+        self.debugOut("Adding default fan speed")
         # Make template
         temp = self._merge_dictionaries(self.tempTemplate.copy(),self.defaultsCustom.copy())
         # Assign
         newCust['cu1'] = temp
         newCust['cu1']['cmd'] = "^M106.*?S([^ ]+)"
-        newCust['cu1']['name'] = 'Fan speed'
+        newCust['cu1']['name'] = 'Cooling fan speed'
         newCust['cu1']['type'] = 'gcOut'
         newCust['cu1']['isTemp'] = False
         newCust['cu1']['showTargetTemp'] = False
@@ -228,6 +231,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         newCust['cu1']['colorIcons'] = False
         newCust['cu1']['showUnit'] = False
         newCust['cu1']['waitForPrint'] = True
+        newCust['cu1']['postCalc'] = 'X/255*100'
+        newCust['cu1']['unit'] = '%'
         self.debugOut(newCust)
 
         self._settings.set(["customMon"],newCust,True)
@@ -821,10 +826,11 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             gcodeCmdLib = self.gcodeCmds[item['type']]
             for cKey in gcodeCmdLib:
                 pattern = gcodeCmdLib[cKey]
-                # self.debugOut("gcode "+item['type']+" macthing : " + cKey + " for string \""+item['data']+"\"" )
-                match = re.search(pattern, item['data'])
+                dataStr = item['data'].strip()
+                # self.debugOut("gcode "+item['type']+" macthing : " + cKey + " for string \""+dataStr+"\"" )
+                match = re.search(pattern, dataStr)
                 if match:
-                    # self.debugOut("----------------------------------------->>> gcode "+item['type']+" matched: " + result)
+                    # self.debugOut("----------------------------------------->>> gcode "+item['type']+" matched: " + dataStr)
                     self.handleCustomData(cKey,match.group(1),item['time'])
 
             # All done - next task please :)
