@@ -198,4 +198,19 @@ body.TopTemPreviewON div#settings_dialog {
     font-size: 0.8em;
 }
 
+/*colors*/
+.orange #navbar_plugin_toptemp.navbar-text,
+.red #navbar_plugin_toptemp.navbar-text,
+.blue #navbar_plugin_toptemp.navbar-text,
+.violet #navbar_plugin_toptemp.navbar-text,
+.black #navbar_plugin_toptemp.navbar-text,
+.yellow #navbar_plugin_toptemp.navbar-text{
+    color: #f2f2f2;
+}
+
+.white #navbar_plugin_toptemp.navbar-text,
+.green #navbar_plugin_toptemp.navbar-text{
+    color: #333;
+}
+
 /* TopTemp END */
