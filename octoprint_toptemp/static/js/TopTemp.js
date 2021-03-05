@@ -82,12 +82,22 @@ $(function() {
                 // Plot the graph
                 var graphData = null;
                 if (customType){
+                    var lowFound = null;
+                    if (name in self.customHistory && self.customHistory[name].length > 0){
+                        graphData =  {'series' : [self.customHistory[name].map(function(val,i){
+                            if (lowFound == null || lowFound > val[1]){
+                                lowFound = val[1];
+                            }
+                            return val[1];
+                        })]};
+                    }
                     var reval = undefined;
                     if (iSettings.isTemp()){
-                        reval = 0;
-                    }
-                    if (name in self.customHistory && self.customHistory[name].length > 0){
-                        graphData =  {'series' : [self.customHistory[name].map(function(val,i){return val[1]})]};
+                        if (lowFound != null){
+                            reval = lowFound - 5;
+                        }else{
+                            reval = 0;
+                        }
                     }
                 }else{
                     var reval = 0;
@@ -1167,10 +1177,6 @@ $(function() {
 
             // Custom data or not?
             if ($isCustom){
-                var reval = undefined;
-                if (iSettings.isTemp()){
-                    reval = 0;
-                }
                 // No data?!
                 if (!($thisID in self.customHistory) || self.customHistory[$thisID].length == 0){
                     return;
@@ -1181,6 +1187,7 @@ $(function() {
                 var dataFound = 0;
                 // Custom uses seconds and not milliseconds
                 var nowTs = Math.round(Date.now() / 1000);
+                var lowFound = null;
                 $.each(temp,function(x,val){
                     var seconds = val[0]-nowTs;
                     // only get last 10 min
@@ -1196,8 +1203,23 @@ $(function() {
                     if(!iSettings.isTemp() && iSettings.postCalc() != null){
                         yval = self.PostCalcProces(yval,iSettings.postCalc());
                     }
+                    if (lowFound == null || lowFound > yval){
+                        lowFound = yval;
+                    }
                     series.push({y:yval,x:seconds});
                 })
+                var reval = undefined;
+                if (iSettings.isTemp()){
+                    if (lowFound != null){
+                         if (fconvert){
+                            reval = lowFound - 41;
+                        }else{
+                            reval = lowFound - 5;
+                        }
+                    }else{
+                        reval = 0;
+                    }
+                }
                 // Assign it
                 graphData = {
                     'series' : [{'data':series,'className':'ct-series-a'}]
