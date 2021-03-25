@@ -118,6 +118,13 @@
                         <span class="help-inline">Blank for no label</span>
                     </div>
                 </div>
+                <div class="control-group" title="Width in pixels - 0 for dynamic">
+                    <label class="control-label">Width</label>
+                    <div class="controls">
+                        <input type="number" min="0" step="1" data-bind="value: settings.plugins.toptemp.bed.width" placeholder="0">
+                        <span class="help-inline">Width in pixels - 0 for dynamic</span>
+                    </div>
+                </div>
                 <div class="control-group" title="Icon in - blank for no icon">
                     <label class="control-label">Icon</label>
                     <div class="controls">
@@ -134,8 +141,8 @@
                             <input type="checkbox" data-bind="checked: settings.plugins.toptemp.bed.colorIcons"> {{ _('Colorize icons to indicate hot or not') }}
                         </label>
                     </div>
-
                 </div>
+
                 <div data-bind="visible: settings.plugins.toptemp.bed.icon().length >0 && settings.plugins.toptemp.bed.colorIcons" class="control-group" title="When should we change the color?">
                    <label class="control-label">Color change level</label>
                     <div class="controls">
@@ -249,6 +256,13 @@
                     <div class="controls">
                         <input type="text" data-bind="value: settings.plugins.toptemp.chamber.label" placeholder="Label - blank for nothing">
                         <span class="help-inline">Blank for no label</span>
+                    </div>
+                </div>
+                <div class="control-group" title="Width in pixels - 0 for dynamic">
+                    <label class="control-label">Width</label>
+                    <div class="controls">
+                        <input type="number" min="0" step="1" data-bind="value: settings.plugins.toptemp.chamber.width" placeholder="0">
+                        <span class="help-inline">Width in pixels - 0 for dynamic</span>
                     </div>
                 </div>
                 <div class="control-group" title="Icon - blank for no icon">
@@ -382,6 +396,13 @@
                     <div class="controls">
                         <input type="text" data-bind="value: $parent.settings.plugins.toptemp['tool'+$index()].label" placeholder="Label - blank for nothing">
                         <span class="help-inline">Blank for no label</span>
+                    </div>
+                </div>
+                <div class="control-group" title="Width in pixels - 0 for dynamic">
+                    <label class="control-label">Width</label>
+                    <div class="controls">
+                        <input type="number" min="0" step="1" data-bind="value: $parent.settings.plugins.toptemp['tool'+$index()].width" placeholder="0">
+                        <span class="help-inline">Width in pixels - 0 for dynamic</span>
                     </div>
                 </div>
                 <div class="control-group" title="Icon - blank for no icon">
@@ -581,6 +602,13 @@
                     <div class="controls">
                         <input type="text" data-settings="label" placeholder="Label - blank for nothing">
                         <span class="help-inline">Blank for no label</span>
+                    </div>
+                </div>
+                <div class="control-group" title="Width in pixels - 0 for dynamic">
+                    <label class="control-label">Width</label>
+                    <div class="controls">
+                        <input type="number" min="0" step="1" data-settings="width" placeholder="0">
+                        <span class="help-inline">Width in pixels - 0 for dynamic</span>
                     </div>
                 </div>
                 <div class="control-group" title="Icon - blank for no icon">

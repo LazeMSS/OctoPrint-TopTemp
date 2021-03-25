@@ -1173,6 +1173,10 @@ $(function() {
                 }
             }else{
                 var ylabel = iSettings.name();
+                // Add unit
+                if (iSettings.unit() != ""){
+                    ylabel += "(" +iSettings.unit()+")";
+                }
             }
 
             // Custom data or not?
@@ -1191,7 +1195,7 @@ $(function() {
                 $.each(temp,function(x,val){
                     var seconds = val[0]-nowTs;
                     // only get last 10 min
-                    if (seconds < self.popoverGHist && dataFound > 10){
+                    if (seconds < self.popoverGHist){
                         return false;
                     }
                     dataFound++;
@@ -1384,6 +1388,11 @@ $(function() {
             if (!settings.show()){
                 $('#'+elname).hide();
             }
+            // Set fixed width if entered
+            if (settings.width() > 0){
+                $('#'+elname).css({'width':settings.width()+'px'});
+            }
+
             self.setGraphStyle(name,settings.graphSettings);
             return elname;
         }
