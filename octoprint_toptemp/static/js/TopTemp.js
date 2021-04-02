@@ -241,7 +241,7 @@ $(function() {
             if (calc == null || calc == false || $.trim(calc) == ""){
                 return val;
             }
-            return eval(calc.replace("X",val));
+            return eval(calc.replace(/x/ig,val));
         }
 
         // Get updated data from the "feeds"
@@ -700,7 +700,7 @@ $(function() {
             }else{
                 $('#settings_plugin_toptemp .UICShowIconPicker').off('click.TopTempPlugin').on('click.TopTempPlugin',function(event){
                     new PNotify({
-                        title: 'Instal UI Customizer',
+                        title: 'Install UI Customizer',
                         text: 'In order to use the icon picker please install the UI Customizer plugin.<br><a target="_new" href="https://github.com/LazeMSS/OctoPrint-UICustomizer/">More...</a>',
                         type: "notice",
                         hide: false
