@@ -9,7 +9,7 @@ from octoprint.server import user_permission
 import os.path
 from os import path
 
-
+import glob
 import sys
 import flask
 import subprocess
@@ -32,7 +32,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.customHistory = {}
 
         # List of cpu temp methods found
-        self.cpuTemps = {}
+        self.tempCmds = {}
 
         self.psutilCPUHasRun = False
 
@@ -198,14 +198,14 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # # type can be cmd, gcIn, gcOut
         # self.defaultsCustom = {'cmd':'','name':'','interval': 25, 'type':'cmd', 'isTemp' : True}
 
-        for key in self.cpuTemps:
-            if self.cpuTemps[key][1] != False:
+        for key in self.tempCmds:
+            if self.tempCmds[key][1] != False:
                 self.debugOut("Adding default CPU temp")
                 # Make template
                 temp = self._merge_dictionaries(self.tempTemplate.copy(),self.defaultsCustom.copy())
                 # Assign
                 newCust = {'cu0':temp}
-                newCust['cu0']['cmd'] = self.cpuTemps[key][0]
+                newCust['cu0']['cmd'] = self.tempCmds[key][0]
                 newCust['cu0']['name'] = 'CPU temperature'
                 newCust['cu0']['type'] = 'cmd'
                 newCust['cu0']['isTemp'] = True
@@ -412,13 +412,13 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     # check the available methods for finding CPU temp on the hw platform
     # ----------------------------------------------------------------------------------------------------------------
     def checkCpuTempMethods(self):
-        self.cpuTemps = {}
+        self.tempCmds = {}
 
         self.debugOut("Building cpu methods!")
 
         # build list for linux
         if sys.platform.startswith("linux"):
-            self.cpuTemps = {
+            self.tempCmds = {
                 '/opt/vc/bin/vcgencmd' :
                     [
                         '/opt/vc/bin/vcgencmd measure_temp|cut -d "=" -f2|cut -d"\'" -f1',
@@ -442,24 +442,37 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             # try and find thermal class by looking cpu-thermal temp
             code, out, err = self.runcommand("for i in /sys/class/thermal/thermal_zone*; do if grep -qi cpu-thermal $i/type && test -f $i/temp ; then echo $i/temp;exit 0; fi; done; exit 1")
             if not code and not err:
-                self.cpuTemps[out] = ["awk '{print $0/1000}' "+out,'CPU thermal zone',None]
+                self.tempCmds[out] = ["awk '{print $0/1000}' "+out,'CPU thermal zone',None]
+
+            # look for DS18B20 devices
+            DS18B20s = glob.glob('/sys/bus/w1/devices/28-*')
+            if DS18B20s:
+                for DS18B20 in DS18B20s:
+                    #check slave is present /w1_slave
+                    dsslave = os.path.join(DS18B20,'w1_slave')
+                    if os.path.isfile(dsslave):
+                        dsbase = os.path.basename(DS18B20)
+                        # check for crc
+                        code, out, err = self.runcommand("grep -iqP \"crc=(.*)YES\" "+dsslave)
+                        if not code and not err:
+                            self.tempCmds[DS18B20] = ["awk -F'[ =]' '$10==\"t\"{printf(\"%.2f\\n\",$11/1000)}' "+dsslave,'DS18B20 sensor ('+dsbase+')' ,None]
 
         # check all methods found
-        for key in self.cpuTemps:
+        for key in self.tempCmds:
             if (path.exists(key)):
-                self._logger.debug(self.cpuTemps[key])
-                code, out, err = self.runcommand(self.cpuTemps[key][0])
+                # self._logger.debug(self.tempCmds[key])
+                code, out, err = self.runcommand(self.tempCmds[key][0])
                 out = out.rstrip("\n")
                 if code or err:
+                    #self._logger.debug("ERROR 1:-------------------------------------------------------------%s %s",err,code)
                     pass
-                     #self._logger.debug("ERROR 1:-------------------------------------------------------------%s %s",err,code)
                 else:
                     if out.replace('.','',1).isdigit():
-                        self.cpuTemps[key][2] = float(out)
-                        # self._logger.debug("OK-------------------------------------------------------------%s",out)
+                        #self._logger.debug("OK-------------------------------------------------------------%s",out)
+                        self.tempCmds[key][2] = float(out)
                     else:
+                        # self._logger.debug("ERROR 2:-------------------------------------------------------------%s",out)
                         pass
-                        #self._logger.debug("ERROR 2:-------------------------------------------------------------%s",out)
             else:
                 self._logger.debug("Not found:-------------------------------------------------------------%s",key)
 
@@ -712,7 +725,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 self.buildPsuUtil()
 
             self.debugOut("Sending options")
-            return flask.jsonify({'cmds' : self.cpuTemps,'psutil' : self.psutilList})
+            return flask.jsonify({'cmds' : self.tempCmds,'psutil' : self.psutilList})
 
         # Get history data
         if command == "getCustomHistory":
