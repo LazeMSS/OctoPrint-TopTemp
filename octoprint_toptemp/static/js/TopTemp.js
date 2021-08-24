@@ -43,6 +43,7 @@ $(function() {
             'gcOut': {
                 'Cooling fan speed' : '^M106.*?S([^ ]+)',
                 'Feedrate %' : '^M220 S([^ ]+)',
+                '% Completed' : '^M73.*?P(\\d+)',
                 // 'Extruder feed rate' : '^(?:G0|G1).*?F([^ ]+)'
             }
         };
@@ -101,7 +102,7 @@ $(function() {
                     }
                 }else{
                     var reval = 0;
-                    graphData = {'series' : [OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[name].actual.slice(-300).map(function(val,i){return val[1]})]};
+                    graphData = {'series' : [self.tempModel.temperatures[name].actual.slice(-300).map(function(val,i){return val[1]})]};
                 }
                 // DO we have what we need
                 if (graphData != null && typeof Chartist == "object"){
@@ -1143,8 +1144,8 @@ $(function() {
                         $('#TopTempPopoverText_'+$thisID).html(output);
                     }
                 }else{
-                    var actual = OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].actual[OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].actual.length-1][1];
-                    var target = OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].target[OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].target.length-1][1];
+                    var actual = self.tempModel.temperatures[$thisID].actual[self.tempModel.temperatures[$thisID].actual.length-1][1];
+                    var target = self.tempModel.temperatures[$thisID].target[self.tempModel.temperatures[$thisID].target.length-1][1];
                     var output = '<div class="pull-left"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div><div class="pull-right"><small>Target: ';
                     if (target == 0){
                         output += 'Off';
@@ -1261,8 +1262,8 @@ $(function() {
                 // Assign it
                 graphData = {
                     'series' : [
-                        {'data':buildSeries([...OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].actual]),'className':'ct-series-a'},
-                        {'data':buildSeries([...OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].target]),'className':'ct-series-g'},
+                        {'data':buildSeries([...self.tempModel.temperatures[$thisID].actual]),'className':'ct-series-a'},
+                        {'data':buildSeries([...self.tempModel.temperatures[$thisID].target]),'className':'ct-series-g'},
                     ]
                 };
             }
@@ -1367,33 +1368,37 @@ $(function() {
         // Build a single container
         self.buildContainer = function(name,className){
             var elname = 'navbar_plugin_toptemp_'+name;
-            var settings = self.getSettings(name);
+            var localSettings = self.getSettings(name);
             // Get name
             prettyName = self.getTempName(name);
             // Set type
             var isCust = false;
             if (self.isCustom(name)){
                 isCust = true;
-                if (settings.waitForPrint()){
+                if (localSettings.waitForPrint()){
                     className += " TopTempWaitPrinter";
                 }
             }
             if (self.settings.leftAlignIcons()){
                 className += " IconsLeft";
             }
+            var textClass = "TopTempText";
+            if (!localSettings.graphSettings.show() && !localSettings.icon()){
+                textClass = "navbar-text";
+            }
             // Remove old
             $('#'+elname).remove();
             // Build new
-            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'" data-toptempid="'+name+'" data-toptempcust="'+isCust+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="TopTempText"></div></div>');
-            if (!settings.show()){
+            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'" data-toptempid="'+name+'" data-toptempcust="'+isCust+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="'+textClass+'"></div></div>');
+            if (!localSettings.show()){
                 $('#'+elname).hide();
             }
             // Set fixed width if entered
-            if (settings.width() > 0){
-                $('#'+elname).css({'width':settings.width()+'px'});
+            if (localSettings.width() > 0){
+                $('#'+elname).css({'width':localSettings.width()+'px'});
             }
 
-            self.setGraphStyle(name,settings.graphSettings);
+            self.setGraphStyle(name,localSettings.graphSettings);
             return elname;
         }
 

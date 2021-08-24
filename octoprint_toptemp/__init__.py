@@ -38,7 +38,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         # List of psu
         self.psutilList = {
-            'cpup'      : ['CPU usage percentage'],
+            'cpup'      : ['CPU usage %'],
             'cpuf'      : ['CPU frequency in MHz'],
             'loadavg1'  : ['Average system load last 1 minute'],
             'loadavg5'  : ['Average system load last 5 minutes'],
@@ -47,11 +47,11 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             'memavail'  : ['Total available memory in MB'],
             'memused'   : ['Memory used in MB'],
             'memfree'   : ['Memory not being used at all in MB'],
-            'memp'      : ['Memory free percentage'],
+            'memp'      : ['Memory free %'],
             'swaptotal' : ['Total swap memory in MB'],
             'swapused'  : ['Used swap memory in MB'],
             'swapfree'  : ['Free swap memory in MB'],
-            'swapperc'  : ['Free swap percentage']
+            'swapperc'  : ['Free swap %']
         }
 
         # Gcode handling
@@ -361,10 +361,10 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         partitions = [partition._asdict() for partition in psutil.disk_partitions()]
         count = 0
         for partition in partitions:
-            self.psutilList['diskfree_'+str(count)] = ["Disk free "+partition['mountpoint'],partition['mountpoint']]
-            self.psutilList['disktotal_'+str(count)] = ["Disk total "+partition['mountpoint'],partition['mountpoint']]
-            self.psutilList['diskused_'+str(count)] = ["Disk used "+partition['mountpoint'],partition['mountpoint']]
-            self.psutilList['diskperc_'+str(count)] = ["Disk used percent "+partition['mountpoint'],partition['mountpoint']]
+            self.psutilList['diskfree_'+str(count)] = ["Disk free \""+partition['mountpoint']+"\"",partition['mountpoint']]
+            self.psutilList['disktotal_'+str(count)] = ["Disk total \""+partition['mountpoint']+"\"",partition['mountpoint']]
+            self.psutilList['diskused_'+str(count)] = ["Disk used \""+partition['mountpoint']+"\"",partition['mountpoint']]
+            self.psutilList['diskperc_'+str(count)] = ["Disk used %  \""+partition['mountpoint']+"\"",partition['mountpoint']]
             count += 1
 
         # temperatures
@@ -403,7 +403,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         if hasattr(psutil, "sensors_battery"):
             battery = psutil.sensors_battery()
             if battery:
-                self.psutilList['batper'] = ["Battery power left percentage"]
+                self.psutilList['batper'] = ["Battery power left %"]
                 self.psutilList['batsec'] = ["Battery power left seconds"]
 
         self.debugOut(self.psutilList)
