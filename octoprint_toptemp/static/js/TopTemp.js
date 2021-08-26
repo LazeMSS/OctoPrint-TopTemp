@@ -59,7 +59,7 @@ $(function() {
             var iSettings = self.getSettings(name);
 
             // Do know this or want it shown
-            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget()) || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true) || ('waitForPrint' in iSettings && iSettings.waitForPrint() && !self.connection.isPrinting()) ){
+            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget()) || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true) || ('waiForPrint' in iSettings && iSettings.waitForPrint() && !self.connection.isPrinting()) ){
                 $('#navbar_plugin_toptemp_'+name).hide();
                 return;
             }else{
@@ -1039,7 +1039,6 @@ $(function() {
                 }
                 if (self.isCustom(name)){
                     self.buildContainer(name,'TopTempCustom TopTempLoad');
-
                 }else{
                     self.buildContainer(name,'TopTempPrinter TopTempLoad');
                 }
@@ -1383,7 +1382,7 @@ $(function() {
                 className += " IconsLeft";
             }
             var textClass = "TopTempText";
-            if (!localSettings.graphSettings.show() && !localSettings.icon()){
+            if (!localSettings.graphSettings.show()){
                 textClass = "navbar-text";
             }
             // Remove old
