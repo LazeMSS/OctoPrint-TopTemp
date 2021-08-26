@@ -48,6 +48,13 @@
     height: 100%;
     overflow: hidden;
 }
+@media (max-width: 767px){
+    #navbar_plugin_toptemp div.TopTempPrinter div.navbar-text, #navbar_plugin_toptemp div.TopTempCustom div.navbar-text{
+        height: 100%;
+        margin-top: 6px;
+        line-height: initial;
+    }
+}
 
 #navbar_plugin_toptemp div .TopTempIcon{
     display: block;
