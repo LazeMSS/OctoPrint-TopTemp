@@ -48,6 +48,10 @@
     height: 100%;
     overflow: hidden;
 }
+#navbar_plugin_toptemp div.TopTempPrinter.popclick, #navbar_plugin_toptemp div.TopTempCustom.popclick{
+    cursor: pointer;
+}
+
 @media (max-width: 767px){
     #navbar_plugin_toptemp div.TopTempPrinter div.navbar-text, #navbar_plugin_toptemp div.TopTempCustom div.navbar-text{
         height: 100%;

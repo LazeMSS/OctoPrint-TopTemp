@@ -1078,10 +1078,16 @@ $(function() {
                     return;
                 }
 
+                // How should we show popovers
+                var popoverDmethod = 'manual';
+                if (self.settings.clickPopover()){
+                    popoverDmethod = "click";
+                }
+
                 // Initial creation
                 if (!$this.data('popover') != null || !$this.data('popover').enabled){
                     $this.popover({
-                        'trigger': 'manual',
+                        'trigger': popoverDmethod,
                         'placement' : 'bottom',
                         'container': '#page-container-main',
                         'html' : true,
@@ -1097,14 +1103,11 @@ $(function() {
                         'content': '<div id="TopTempPopoverText_'+$thisID+'" class="TopTempPopoverText clearfix">Wait&hellip;</div><div id="TopTempPopoverGraph_'+$thisID+'" class="TopTempPopoverGraph"></div>'
                     });
                 }
-
-                // Show the popover and update content
-                $this.off('mouseenter').on('mouseenter',function(){
-                    if ($this.hasClass('TopTempLoad')){
-                        return;
+                // On show
+                $this.on('shown',function(){
+                    if (self.popoverOpen && self.settings.clickPopover()){
+                        $('#navbar_plugin_toptemp >div').not($this).popover('hide')
                     }
-                    // Fix offset problems
-                    $this.popover('show');
                     self.popoverOpen = true;
                     // Fix arrows hacks for small screens
                     if ($(window).width() <=767){
@@ -1114,12 +1117,29 @@ $(function() {
                     }
                     // Build contents
                     self.updatePopover($thisID,$isCustom,isettings);
+                });
+
+                // On hidden
+                $this.on('hidden',function(){
+                    self.popoverOpen = false;
+                })
+
+                // Show the popover and update content
+                $this.off('mouseenter').on('mouseenter',function(){
+                    if ($this.hasClass('TopTempLoad')){
+                        return;
+                    }
+                    // Fix offset problems
+                    if (popoverDmethod == "manual"){
+                        $this.popover('show');
+                    }
                 }).off('mouseleave').on('mouseleave',function(){
                     if ($this.hasClass('TopTempLoad')){
                         return;
                     }
-                    self.popoverOpen = false;
-                    $this.popover('hide');
+                    if (popoverDmethod == "manual"){
+                        $this.popover('hide');
+                    }
                 }).attr('title',"Show more information");
             });
         }
@@ -1388,6 +1408,9 @@ $(function() {
             // Remove old
             $('#'+elname).remove();
             // Build new
+            if (self.settings.clickPopover() && localSettings.graphSettings.show()){
+                className += " popclick";
+            }
             $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'" data-toptempid="'+name+'" data-toptempcust="'+isCust+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="'+textClass+'"></div></div>');
             if (!localSettings.show()){
                 $('#'+elname).hide();
