@@ -1098,6 +1098,9 @@ $(function() {
                             if (iconClone.length){
                                 iconstr = iconClone.clone().addClass('pull-right').wrap('<p>').parent().html()
                             }
+                            if (self.settings.clickPopover()){
+                                iconstr += '<a onclick="javascript:$(\'#navbar_plugin_toptemp_'+$thisID+'\').popover(\'hide\');"><i class="far fa-times-circle"></i></a>';
+                            }
                             return self.getTempName($thisID)+iconstr;
                         },
                         'content': '<div id="TopTempPopoverText_'+$thisID+'" class="TopTempPopoverText clearfix">Wait&hellip;</div><div id="TopTempPopoverGraph_'+$thisID+'" class="TopTempPopoverGraph"></div>'
