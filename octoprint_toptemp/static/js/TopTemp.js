@@ -268,7 +268,7 @@ $(function() {
             }
         }
 
-        // CPU Temps
+        // Custom data
         self.onDataUpdaterPluginMessage = function(plugin, data) {
             if (plugin != "toptemp"){
                 return;

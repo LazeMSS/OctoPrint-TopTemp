@@ -636,7 +636,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         if returnVal:
             self.debugOut("psutil " + cmd + " returned: " + str(returnVal) + " for index :"+indx)
             if returnData:
-                return returnVal;
+                return returnVal
             self.handleCustomData(indx,returnVal,time.time())
 
         # Disk
@@ -678,11 +678,11 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         if returnVal:
             self.debugOut("psutil " + cmd + " returned: " + str(returnVal) + " for index :"+indx)
             if returnData:
-                return returnVal;
+                return returnVal
             self.handleCustomData(indx,returnVal,time.time())
 
         if returnData:
-                return None;
+                return None
 
     def handleCustomData(self,indx,out,time):
         self.debugOut("Got custom data: " + str(out))
@@ -710,7 +710,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             monitorService=[],
             getCustomHistory=[],
             getDefaultSettings=[],
-            getPredefined=['reload']
+            getPredefined=['reload'],
+            getItems=[]
         )
 
     # handle api calls
@@ -727,6 +728,26 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
             self.debugOut("Sending options")
             return flask.jsonify({'cmds' : self.tempCmds,'psutil' : self.psutilList})
+
+        if command == "getItems":
+            self._logger.info("Sending items monitored")
+            sortOrder = self._settings.get(["sortOrder"],merged=True,asdict=True)
+            custom = self._settings.get(["customMon"],merged=True,asdict=True)
+            curTemps = self._printer.get_current_temperatures();
+            returnList = {}
+            lastValues = {}
+            for item in sortOrder:
+                lastVal = None
+                if item in custom:
+                    returnList[item] = custom[item]
+                    if item in self.customHistory:
+                        lastVal = self.customHistory[item] and self.customHistory[item][-1][1] or None
+                else:
+                    if item in curTemps:
+                        lastVal = curTemps[item]['actual']
+                    returnList[item] = self._settings.get([item],merged=True,asdict=True)
+                lastValues[item] = lastVal
+            return flask.jsonify({'items' : returnList,'lastValues': lastValues})
 
         # Get history data
         if command == "getCustomHistory":
