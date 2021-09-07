@@ -570,6 +570,23 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # 'swapused'  : ['Used swap memory'],
         # 'swapfree'  : ['Free swap memory'],
         # 'swapperc'  : ['Free swap percentage']
+        #  Icons to the above
+        # <i class="fas fa-microchip"></i>
+        # <i class="fas fa-microchip"></i>
+        # <i class="fas fa-tachometer-alt"></i>
+        # <i class="fas fa-tachometer-alt"></i>
+        # <i class="fas fa-tachometer-alt"></i>
+        # <i class="fas fa-memory"></i>
+        # <i class="fas fa-memory"></i>
+        # <i class="fas fa-memory"></i>
+        # <i class="fas fa-memory"></i>
+        # <i class="fas fa-memory"></i>
+        # exchange-alt
+        #
+        # disk: <i class="fas fa-hdd"></i>
+        # temp: <i class="fas fa-thermometer-half"></i>
+        # fan: <i class="fas fa-fan"></i>
+        # battery: <i class="fas fa-battery-half"></i>
         # self.psutilList['diskfree_'+str(count)] = ["Disk free "+partition['mountpoint'],partition['mountpoint']]
         # self.psutilList['disktotal_'+str(count)] = ["Disk total "+partition['mountpoint'],partition['mountpoint']]
         # self.psutilList['diskused_'+str(count)] = ["Disk used "+partition['mountpoint'],partition['mountpoint']]
