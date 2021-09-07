@@ -38,7 +38,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         # List of psu
         self.psutilList = {
-            'cpup'      : ['CPU usage percentage'],
+            'cpup'      : ['CPU usage %'],
             'cpuf'      : ['CPU frequency in MHz'],
             'loadavg1'  : ['Average system load last 1 minute'],
             'loadavg5'  : ['Average system load last 5 minutes'],
@@ -47,11 +47,11 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             'memavail'  : ['Total available memory in MB'],
             'memused'   : ['Memory used in MB'],
             'memfree'   : ['Memory not being used at all in MB'],
-            'memp'      : ['Memory free percentage'],
+            'memp'      : ['Memory free %'],
             'swaptotal' : ['Total swap memory in MB'],
             'swapused'  : ['Used swap memory in MB'],
             'swapfree'  : ['Free swap memory in MB'],
-            'swapperc'  : ['Free swap percentage']
+            'swapperc'  : ['Free swap %']
         }
 
         # Gcode handling
@@ -71,6 +71,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             'fahrenheit' : False,
             'leftAlignIcons' : False,
             'hideInactiveTemps' : True,
+            'clickPopover' : False,
             'noTools' : self.noTools,
             'sortOrder': ['bed','tool0','tool1','chamber','cu0'],
             'outerMargin': 4,
@@ -361,10 +362,10 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         partitions = [partition._asdict() for partition in psutil.disk_partitions()]
         count = 0
         for partition in partitions:
-            self.psutilList['diskfree_'+str(count)] = ["Disk free "+partition['mountpoint'],partition['mountpoint']]
-            self.psutilList['disktotal_'+str(count)] = ["Disk total "+partition['mountpoint'],partition['mountpoint']]
-            self.psutilList['diskused_'+str(count)] = ["Disk used "+partition['mountpoint'],partition['mountpoint']]
-            self.psutilList['diskperc_'+str(count)] = ["Disk used percent "+partition['mountpoint'],partition['mountpoint']]
+            self.psutilList['diskfree_'+str(count)] = ["Disk free \""+partition['mountpoint']+"\"",partition['mountpoint']]
+            self.psutilList['disktotal_'+str(count)] = ["Disk total \""+partition['mountpoint']+"\"",partition['mountpoint']]
+            self.psutilList['diskused_'+str(count)] = ["Disk used \""+partition['mountpoint']+"\"",partition['mountpoint']]
+            self.psutilList['diskperc_'+str(count)] = ["Disk used %  \""+partition['mountpoint']+"\"",partition['mountpoint']]
             count += 1
 
         # temperatures
@@ -403,7 +404,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         if hasattr(psutil, "sensors_battery"):
             battery = psutil.sensors_battery()
             if battery:
-                self.psutilList['batper'] = ["Battery power left percentage"]
+                self.psutilList['batper'] = ["Battery power left %"]
                 self.psutilList['batsec'] = ["Battery power left seconds"]
 
         self.debugOut(self.psutilList)
@@ -569,6 +570,23 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # 'swapused'  : ['Used swap memory'],
         # 'swapfree'  : ['Free swap memory'],
         # 'swapperc'  : ['Free swap percentage']
+        #  Icons to the above
+        # <i class="fas fa-microchip"></i>
+        # <i class="fas fa-microchip"></i>
+        # <i class="fas fa-tachometer-alt"></i>
+        # <i class="fas fa-tachometer-alt"></i>
+        # <i class="fas fa-tachometer-alt"></i>
+        # <i class="fas fa-memory"></i>
+        # <i class="fas fa-memory"></i>
+        # <i class="fas fa-memory"></i>
+        # <i class="fas fa-memory"></i>
+        # <i class="fas fa-memory"></i>
+        # exchange-alt
+        #
+        # disk: <i class="fas fa-hdd"></i>
+        # temp: <i class="fas fa-thermometer-half"></i>
+        # fan: <i class="fas fa-fan"></i>
+        # battery: <i class="fas fa-battery-half"></i>
         # self.psutilList['diskfree_'+str(count)] = ["Disk free "+partition['mountpoint'],partition['mountpoint']]
         # self.psutilList['disktotal_'+str(count)] = ["Disk total "+partition['mountpoint'],partition['mountpoint']]
         # self.psutilList['diskused_'+str(count)] = ["Disk used "+partition['mountpoint'],partition['mountpoint']]
@@ -635,7 +653,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         if returnVal:
             self.debugOut("psutil " + cmd + " returned: " + str(returnVal) + " for index :"+indx)
             if returnData:
-                return returnVal;
+                return returnVal
             self.handleCustomData(indx,returnVal,time.time())
 
         # Disk
@@ -677,11 +695,11 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         if returnVal:
             self.debugOut("psutil " + cmd + " returned: " + str(returnVal) + " for index :"+indx)
             if returnData:
-                return returnVal;
+                return returnVal
             self.handleCustomData(indx,returnVal,time.time())
 
         if returnData:
-                return None;
+                return None
 
     def handleCustomData(self,indx,out,time):
         self.debugOut("Got custom data: " + str(out))
@@ -709,7 +727,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             monitorService=[],
             getCustomHistory=[],
             getDefaultSettings=[],
-            getPredefined=['reload']
+            getPredefined=['reload'],
+            getItems=[]
         )
 
     # handle api calls
@@ -726,6 +745,26 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
             self.debugOut("Sending options")
             return flask.jsonify({'cmds' : self.tempCmds,'psutil' : self.psutilList})
+
+        if command == "getItems":
+            self._logger.info("Sending items monitored")
+            sortOrder = self._settings.get(["sortOrder"],merged=True,asdict=True)
+            custom = self._settings.get(["customMon"],merged=True,asdict=True)
+            curTemps = self._printer.get_current_temperatures();
+            returnList = {}
+            lastValues = {}
+            for item in sortOrder:
+                lastVal = None
+                if item in custom:
+                    returnList[item] = custom[item]
+                    if item in self.customHistory:
+                        lastVal = self.customHistory[item] and self.customHistory[item][-1][1] or None
+                else:
+                    if item in curTemps:
+                        lastVal = curTemps[item]['actual']
+                    returnList[item] = self._settings.get([item],merged=True,asdict=True)
+                lastValues[item] = lastVal
+            return flask.jsonify({'items' : returnList,'lastValues': lastValues})
 
         # Get history data
         if command == "getCustomHistory":

@@ -43,6 +43,7 @@ $(function() {
             'gcOut': {
                 'Cooling fan speed' : '^M106.*?S([^ ]+)',
                 'Feedrate %' : '^M220 S([^ ]+)',
+                '% Completed' : '^M73.*?P(\\d+)',
                 // 'Extruder feed rate' : '^(?:G0|G1).*?F([^ ]+)'
             }
         };
@@ -101,7 +102,7 @@ $(function() {
                     }
                 }else{
                     var reval = 0;
-                    graphData = {'series' : [OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[name].actual.slice(-300).map(function(val,i){return val[1]})]};
+                    graphData = {'series' : [self.tempModel.temperatures[name].actual.slice(-300).map(function(val,i){return val[1]})]};
                 }
                 // DO we have what we need
                 if (graphData != null && typeof Chartist == "object"){
@@ -267,7 +268,7 @@ $(function() {
             }
         }
 
-        // CPU Temps
+        // Custom data
         self.onDataUpdaterPluginMessage = function(plugin, data) {
             if (plugin != "toptemp"){
                 return;
@@ -1038,7 +1039,6 @@ $(function() {
                 }
                 if (self.isCustom(name)){
                     self.buildContainer(name,'TopTempCustom TopTempLoad');
-
                 }else{
                     self.buildContainer(name,'TopTempPrinter TopTempLoad');
                 }
@@ -1078,10 +1078,16 @@ $(function() {
                     return;
                 }
 
+                // How should we show popovers
+                var popoverDmethod = 'manual';
+                if (self.settings.clickPopover()){
+                    popoverDmethod = "click";
+                }
+
                 // Initial creation
                 if (!$this.data('popover') != null || !$this.data('popover').enabled){
                     $this.popover({
-                        'trigger': 'manual',
+                        'trigger': popoverDmethod,
                         'placement' : 'bottom',
                         'container': '#page-container-main',
                         'html' : true,
@@ -1092,19 +1098,19 @@ $(function() {
                             if (iconClone.length){
                                 iconstr = iconClone.clone().addClass('pull-right').wrap('<p>').parent().html()
                             }
+                            if (self.settings.clickPopover()){
+                                iconstr += '<a onclick="javascript:$(\'#navbar_plugin_toptemp_'+$thisID+'\').popover(\'hide\');"><i class="far fa-times-circle"></i></a>';
+                            }
                             return self.getTempName($thisID)+iconstr;
                         },
                         'content': '<div id="TopTempPopoverText_'+$thisID+'" class="TopTempPopoverText clearfix">Wait&hellip;</div><div id="TopTempPopoverGraph_'+$thisID+'" class="TopTempPopoverGraph"></div>'
                     });
                 }
-
-                // Show the popover and update content
-                $this.off('mouseenter').on('mouseenter',function(){
-                    if ($this.hasClass('TopTempLoad')){
-                        return;
+                // On show
+                $this.on('shown',function(){
+                    if (self.popoverOpen && self.settings.clickPopover()){
+                        $('#navbar_plugin_toptemp >div').not($this).popover('hide')
                     }
-                    // Fix offset problems
-                    $this.popover('show');
                     self.popoverOpen = true;
                     // Fix arrows hacks for small screens
                     if ($(window).width() <=767){
@@ -1114,12 +1120,29 @@ $(function() {
                     }
                     // Build contents
                     self.updatePopover($thisID,$isCustom,isettings);
+                });
+
+                // On hidden
+                $this.on('hidden',function(){
+                    self.popoverOpen = false;
+                })
+
+                // Show the popover and update content
+                $this.off('mouseenter').on('mouseenter',function(){
+                    if ($this.hasClass('TopTempLoad')){
+                        return;
+                    }
+                    // Fix offset problems
+                    if (popoverDmethod == "manual"){
+                        $this.popover('show');
+                    }
                 }).off('mouseleave').on('mouseleave',function(){
                     if ($this.hasClass('TopTempLoad')){
                         return;
                     }
-                    self.popoverOpen = false;
-                    $this.popover('hide');
+                    if (popoverDmethod == "manual"){
+                        $this.popover('hide');
+                    }
                 }).attr('title',"Show more information");
             });
         }
@@ -1143,8 +1166,8 @@ $(function() {
                         $('#TopTempPopoverText_'+$thisID).html(output);
                     }
                 }else{
-                    var actual = OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].actual[OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].actual.length-1][1];
-                    var target = OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].target[OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].target.length-1][1];
+                    var actual = self.tempModel.temperatures[$thisID].actual[self.tempModel.temperatures[$thisID].actual.length-1][1];
+                    var target = self.tempModel.temperatures[$thisID].target[self.tempModel.temperatures[$thisID].target.length-1][1];
                     var output = '<div class="pull-left"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div><div class="pull-right"><small>Target: ';
                     if (target == 0){
                         output += 'Off';
@@ -1261,8 +1284,8 @@ $(function() {
                 // Assign it
                 graphData = {
                     'series' : [
-                        {'data':buildSeries([...OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].actual]),'className':'ct-series-a'},
-                        {'data':buildSeries([...OctoPrint.coreui.viewmodels.temperatureViewModel.temperatures[$thisID].target]),'className':'ct-series-g'},
+                        {'data':buildSeries([...self.tempModel.temperatures[$thisID].actual]),'className':'ct-series-a'},
+                        {'data':buildSeries([...self.tempModel.temperatures[$thisID].target]),'className':'ct-series-g'},
                     ]
                 };
             }
@@ -1367,33 +1390,40 @@ $(function() {
         // Build a single container
         self.buildContainer = function(name,className){
             var elname = 'navbar_plugin_toptemp_'+name;
-            var settings = self.getSettings(name);
+            var localSettings = self.getSettings(name);
             // Get name
             prettyName = self.getTempName(name);
             // Set type
             var isCust = false;
             if (self.isCustom(name)){
                 isCust = true;
-                if (settings.waitForPrint()){
+                if (localSettings.waitForPrint()){
                     className += " TopTempWaitPrinter";
                 }
             }
             if (self.settings.leftAlignIcons()){
                 className += " IconsLeft";
             }
+            var textClass = "TopTempText";
+            if (!localSettings.graphSettings.show()){
+                textClass = "navbar-text";
+            }
             // Remove old
             $('#'+elname).remove();
             // Build new
-            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'" data-toptempid="'+name+'" data-toptempcust="'+isCust+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="TopTempText"></div></div>');
-            if (!settings.show()){
+            if (self.settings.clickPopover() && localSettings.graphSettings.show()){
+                className += " popclick";
+            }
+            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'" data-toptempid="'+name+'" data-toptempcust="'+isCust+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="'+textClass+'"></div></div>');
+            if (!localSettings.show()){
                 $('#'+elname).hide();
             }
             // Set fixed width if entered
-            if (settings.width() > 0){
-                $('#'+elname).css({'width':settings.width()+'px'});
+            if (localSettings.width() > 0){
+                $('#'+elname).css({'width':localSettings.width()+'px'});
             }
 
-            self.setGraphStyle(name,settings.graphSettings);
+            self.setGraphStyle(name,localSettings.graphSettings);
             return elname;
         }
 

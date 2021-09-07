@@ -48,6 +48,17 @@
     height: 100%;
     overflow: hidden;
 }
+#navbar_plugin_toptemp div.TopTempPrinter.popclick, #navbar_plugin_toptemp div.TopTempCustom.popclick{
+    cursor: pointer;
+}
+
+@media (max-width: 767px){
+    #navbar_plugin_toptemp div.TopTempPrinter div.navbar-text, #navbar_plugin_toptemp div.TopTempCustom div.navbar-text{
+        height: 100%;
+        margin-top: 6px;
+        line-height: initial;
+    }
+}
 
 #navbar_plugin_toptemp div .TopTempIcon{
     display: block;
@@ -152,6 +163,12 @@ div.popover.toptempPopover {
     z-index: 1030;
 }
 
+div.popover.toptempPopover .popover-title a{
+    float: left;
+    margin-right: 5px;
+    margin-left: -8px;
+}
+
 #navbar_plugin_toptemp div.TopTempGraph .ct-line {
     stroke-width: 1px;
     stroke-opacity: 0.4;
@@ -212,6 +229,10 @@ body.TopTemPreviewON div#settings_dialog {
 .white #navbar_plugin_toptemp.navbar-text,
 .green #navbar_plugin_toptemp.navbar-text{
     color: #333;
+}
+
+#navbar_plugin_toptemp > div:not(.IconsLeft) .navbar-text{
+    line-height: 15px;
 }
 
 /* TopTemp END */
