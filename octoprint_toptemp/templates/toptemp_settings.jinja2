@@ -159,7 +159,8 @@
                 <div class="control-group" title="Number of digits show for temperature">
                     <label class="control-label">Number of digits</label>
                     <div class="controls">
-                        <input type="number" min="0" max="2" step="any" data-bind="value: settings.plugins.toptemp.bed.noDigits">
+                        <input type="number" min="0" max="2" step="1" data-bind="value: settings.plugins.toptemp.bed.noDigits">
+                        <span class="help-inline">-1 = return all digits</span>
                     </div>
                 </div>
                 <div class="control-group" title="Decimal seperator">
@@ -665,7 +666,7 @@
                 <div class="control-group" title="Number of digits">
                     <label class="control-label">Number of digits</label>
                     <div class="controls">
-                        <input type="number" min="0" max="2" step="any" data-settings="noDigits">
+                        <input type="number" min="-1" step="1" data-settings="noDigits">
                     </div>
                 </div>
                 <div class="control-group" title="Decimal seperator">

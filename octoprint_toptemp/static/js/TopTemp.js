@@ -210,8 +210,15 @@ $(function() {
                 if(iSettings.postCalc() != null){
                    value = self.PostCalcProces(value,iSettings.postCalc());
                 }
-                value = Number.parseFloat(value).toFixed(iSettings.noDigits());
-                value = value.replace(".",iSettings.decSep());
+                if (iSettings.noDigits() != -1){
+                    value = Number.parseFloat(value).toFixed(iSettings.noDigits());
+                }else{
+                    value = Number.parseFloat(value);
+                }
+                value = value.toString();
+                if (iSettings.decSep() != ""){
+                    value = value.replace(".",iSettings.decSep());
+                }
                 // Add unit
                 if (iSettings.unit() != ""){
                     value += iSettings.unit();
@@ -226,8 +233,15 @@ $(function() {
                 formatSymbol = "F";
             }
 
-            value = Number.parseFloat(value).toFixed(iSettings.noDigits());
-            value = value.replace(".",iSettings.decSep());
+            if (iSettings.noDigits() != -1){
+                value = Number.parseFloat(value).toFixed(iSettings.noDigits());
+            }else{
+                value = Number.parseFloat(value);
+            }
+            value = value.toString();
+            if (iSettings.decSep() != ""){
+                value = value.replace(".",iSettings.decSep());
+            }
             if (iSettings.showUnit()){
                 value += '&#176;'+formatSymbol;
             }
