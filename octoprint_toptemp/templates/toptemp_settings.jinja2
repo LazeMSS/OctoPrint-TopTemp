@@ -149,7 +149,6 @@
                         </label>
                     </div>
                 </div>
-
                 <div data-bind="visible: settings.plugins.toptemp.bed.icon().length >0 && settings.plugins.toptemp.bed.colorIcons" class="control-group" title="When should we change the color?">
                    <label class="control-label">Color change level</label>
                     <div class="controls">
@@ -157,7 +156,6 @@
                         <span class="help-inline">When the temperature reaches this number the color changes</span>
                     </div>
                 </div>
-
                 <div class="control-group" title="Number of digits show for temperature">
                     <label class="control-label">Number of digits</label>
                     <div class="controls">
@@ -168,6 +166,13 @@
                     <label class="control-label">Decimal seperator</label>
                     <div class="controls">
                         <input type="text" maxlength="1" data-bind="value: settings.plugins.toptemp.bed.decSep" placeholder="Decimal seperator symbol">
+                    </div>
+                </div>
+                <div class="control-group" title="Show seperator">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: settings.plugins.toptemp.bed.showSep"> {{ _('Show seperator to right') }}
+                        </label>
                     </div>
                 </div>
                 <h4>{{ _('Background graph') }}</h4>
@@ -307,6 +312,13 @@
                     <label class="control-label">Decimal seperator</label>
                     <div class="controls">
                         <input type="text" maxlength="1" data-bind="value: settings.plugins.toptemp.chamber.decSep" placeholder="Decimal seperator symbol">
+                    </div>
+                </div>
+                <div class="control-group" title="Show seperator">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: settings.plugins.toptemp.chamber.showSep"> {{ _('Show seperator to right') }}
+                        </label>
                     </div>
                 </div>
                 <h4>{{ _('Background graph') }}</h4>
@@ -453,6 +465,13 @@
                     <label class="control-label">Decimal seperator</label>
                     <div class="controls">
                         <input type="text" maxlength="1" data-bind="value: $parent.settings.plugins.toptemp['tool'+$index()].decSep" placeholder="Decimal seperator symbol">
+                    </div>
+                </div>
+                <div class="control-group" title="Show seperator">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: $parent.settings.plugins.toptemp['tool'+$index()].showSep"> {{ _('Show seperator to right') }}
+                        </label>
                     </div>
                 </div>
                 <h4>{{ _('Background graph') }}</h4>
@@ -653,6 +672,13 @@
                     <label class="control-label">Decimal seperator</label>
                     <div class="controls">
                         <input type="text" maxlength="1" data-settings="decSep" placeholder="Decimal seperator symbol">
+                    </div>
+                </div>
+                <div class="control-group" title="Show seperator">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-settings="showSep"> {{ _('Show seperator to right') }}
+                        </label>
                     </div>
                 </div>
                 <h4>{{ _('Background graph') }}</h4>

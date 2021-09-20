@@ -61,9 +61,11 @@ $(function() {
             // Do know this or want it shown
             if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget()) || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true) || ('waitForPrint' in iSettings && iSettings.waitForPrint() && !self.connection.isPrinting()) ){
                 $('#navbar_plugin_toptemp_'+name).hide();
+                $('#navbar_plugin_toptemp_'+name+'_divider').hide();
                 return;
             }else{
                 $('#navbar_plugin_toptemp_'+name).show();
+                $('#navbar_plugin_toptemp_'+name+'_divider').show();
             }
 
             // Create if not found
@@ -657,7 +659,7 @@ $(function() {
                     if (self.previewOn){
                         var sortlist = $('#TopTempSortList >div').map(function(){return $(this).data('sortid')}).get();
                         $.each(sortlist,function(i,val){
-                            $('#navbar_plugin_toptemp').append($('#navbar_plugin_toptemp_'+val));
+                            $('#navbar_plugin_toptemp').append($('#navbar_plugin_toptemp_'+val),$('#navbar_plugin_toptemp_'+val+"_divider"));
                         });
                         self.fixMargins();
                     }
@@ -827,14 +829,14 @@ $(function() {
                     // Sort them to update preview
                     var sortlist = $('#TopTempSortList >div').map(function(){return $(this).data('sortid')}).get();
                     $.each(sortlist,function(i,val){
-                        $('#navbar_plugin_toptemp').append($('#navbar_plugin_toptemp_'+val));
+                        $('#navbar_plugin_toptemp').append($('#navbar_plugin_toptemp_'+val),$('#navbar_plugin_toptemp_'+val+"_divider"));
                     });
                     self.fixMargins();
                     $('div.modal-backdrop').css('top',$('#navbar').outerHeight()+'px');
                 }else{
                     // Restore sort order
                     $.each(self.settings.sortOrder().reverse(),function(i,val){
-                        $('#navbar_plugin_toptemp').append($('#navbar_plugin_toptemp_'+val));
+                        $('#navbar_plugin_toptemp').append($('#navbar_plugin_toptemp_'+val),$('#navbar_plugin_toptemp_'+val+"_divider"));
                     });
                     self.fixMargins();
                     $('div.modal-backdrop').css('top','0px');
@@ -988,8 +990,10 @@ $(function() {
             self.tempModel.isOperational.subscribe(function(state){
                 if (state){
                     $('#navbar_plugin_toptemp div.TopTempPrinter').show();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical').show();
                 }else if(self.settings.hideInactiveTemps()){
                     $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical').hide();
                 }
             });
 
@@ -997,8 +1001,10 @@ $(function() {
             self.connection.isPrinting.subscribe(function(state){
                 if (state){
                     $('#navbar_plugin_toptemp div.TopTempWaitPrinter').show();
+                    $('#navbar_plugin_toptemp div.TopTempWaitPrinter + span.divider-vertical').show();
                 }else{
                     $('#navbar_plugin_toptemp div.TopTempWaitPrinter').hide();
+                    $('#navbar_plugin_toptemp div.TopTempWaitPrinter + span.divider-vertical').hide();
                 }
             });
 
@@ -1057,12 +1063,15 @@ $(function() {
             // Hide all non operationel
             if (self.settings.hideInactiveTemps() && (!('isOperational' in self.tempModel) || self.tempModel.isOperational() !== true)){
                 $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
+                $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical').hide();
             }
 
             if (self.connection.isPrinting()){
                 $('#navbar_plugin_toptemp div.TopTempWaitPrinter').show();
+                $('#navbar_plugin_toptemp div.TopTempWaitPrinter + span.divider-vertical').show();
             }else{
                 $('#navbar_plugin_toptemp div.TopTempWaitPrinter').hide();
+                $('#navbar_plugin_toptemp div.TopTempWaitPrinter + span.divider-vertical').hide();
             }
 
 
@@ -1073,6 +1082,8 @@ $(function() {
                 var $isCustom = $this.data('toptempcust');
                 var $thisID = $this.data('toptempid');
                 var isettings = self.getSettings($thisID);
+                var tempName = self.getTempName($thisID);
+                $this.attr('title',tempName);
                 // Hide or not
                 if (!isettings.showPopover()){
                     return;
@@ -1101,7 +1112,7 @@ $(function() {
                             if (self.settings.clickPopover()){
                                 iconstr += '<a onclick="javascript:$(\'#navbar_plugin_toptemp_'+$thisID+'\').popover(\'hide\');"><i class="far fa-times-circle"></i></a>';
                             }
-                            return self.getTempName($thisID)+iconstr;
+                            return tempName+iconstr;
                         },
                         'content': '<div id="TopTempPopoverText_'+$thisID+'" class="TopTempPopoverText clearfix">Wait&hellip;</div><div id="TopTempPopoverGraph_'+$thisID+'" class="TopTempPopoverGraph"></div>'
                     });
@@ -1143,7 +1154,7 @@ $(function() {
                     if (popoverDmethod == "manual"){
                         $this.popover('hide');
                     }
-                }).attr('title',"Show more information");
+                }).attr('title',tempName);
             });
         }
 
@@ -1365,8 +1376,8 @@ $(function() {
             }
         }
 
-        self.isCustom = function(string){
-            if (string.slice(0,2) == "cu"){
+        self.isCustom = function(strName){
+            if (strName.slice(0,2) == "cu"){
                 return true;
             }else{
                 return false;
@@ -1414,9 +1425,15 @@ $(function() {
             if (self.settings.clickPopover() && localSettings.graphSettings.show()){
                 className += " popclick";
             }
-            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'" data-toptempid="'+name+'" data-toptempcust="'+isCust+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="'+textClass+'"></div></div>');
+            var sepTxt = ""
+            if (localSettings.showSep()){
+                sepTxt = '<span id="'+elname+'_divider" class="divider-vertical"></span>';
+            }
+            $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'" data-toptempid="'+name+'" data-toptempcust="'+isCust+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="'+textClass+'"></div></div>'+sepTxt);
+
             if (!localSettings.show()){
                 $('#'+elname).hide();
+                $('#'+elname+'_divider').hide();
             }
             // Set fixed width if entered
             if (localSettings.width() > 0){
