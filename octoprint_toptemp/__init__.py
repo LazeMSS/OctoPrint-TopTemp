@@ -102,7 +102,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 'opa': 0.2,
                 'width': 1,
                 'color' : '#000000',
-            }
+            },
+            'showSep' : False
         }
 
         # type can be cmd, gcIn, gcOut, psutil
