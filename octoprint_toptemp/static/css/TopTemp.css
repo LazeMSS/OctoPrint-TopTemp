@@ -232,8 +232,4 @@ body.TopTemPreviewON div#settings_dialog {
     color: #333;
 }
 
-#navbar_plugin_toptemp > div:not(.IconsLeft) .navbar-text{
-    line-height: 15px;
-}
-
 /* TopTemp END */
