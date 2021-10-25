@@ -397,7 +397,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                             label = entry.label
                         else:
                             label = name + "-" +str(count)
-                        self.psutilList['fanspeed_'+str(count)] = ["Fanspeed " + label + " RPM",[name,entryno]]
+                        self.psutilList['fanspeed_'+str(count)] = ["Fanspeed \"" + label + "\" RPM",[name,entryno]]
                         count += 1
                         entryno += 1
 
@@ -691,7 +691,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                     fanEntry = self.psutilList[cmd][1][1]
                     fans = psutil.sensors_fans()
                     if fans and fanName in fans:
-                        fans[fanName][fanEntry].current
+                        returnVal = fans[fanName][fanEntry].current
 
         if returnVal:
             self.debugOut("psutil " + cmd + " returned: " + str(returnVal) + " for index :"+indx)

@@ -307,6 +307,7 @@
                     <label class="control-label">Number of digits</label>
                     <div class="controls">
                         <input type="number" min="0" max="2" step="any" data-bind="value: settings.plugins.toptemp.chamber.noDigits">
+                        <span class="help-inline">-1 = return all digits</span>
                     </div>
                 </div>
                 <div class="control-group" title="Decimal seperator">
@@ -460,6 +461,7 @@
                     <label class="control-label">Number of digits</label>
                     <div class="controls">
                         <input type="number" min="0" max="2" step="any" data-bind="value: $parent.settings.plugins.toptemp['tool'+$index()].noDigits">
+                        <span class="help-inline">-1 = return all digits</span>
                     </div>
                 </div>
                 <div class="control-group" title="Decimal seperator">
@@ -667,6 +669,7 @@
                     <label class="control-label">Number of digits</label>
                     <div class="controls">
                         <input type="number" min="-1" step="1" data-settings="noDigits">
+                        <span class="help-inline">-1 = return all digits</span>
                     </div>
                 </div>
                 <div class="control-group" title="Decimal seperator">

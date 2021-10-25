@@ -558,7 +558,7 @@ $(function() {
                                             if (val[2] == null){
                                                 return;
                                             }
-                                            var item = $('<li><a href="#" data->'+val[1]+'</a></li>');
+                                            var item = $('<li><a href="#">'+val[1]+'</a></li>');
                                             item.on('click',function(){
                                                 $(this).closest('div.input-append').find('input').val(val[0]).trigger('change');
                                             });
@@ -571,7 +571,7 @@ $(function() {
                                     $('#'+newId).find('.toptempTestCMDOutContainer').hide();
                                     if (self.customPSUs != null){
                                         $.each(self.customPSUs,function(idx,val){
-                                            var item = $('<li><a href="#" data->'+val[0]+'</a></li>');
+                                            var item = $('<li><a href="#">'+val[0]+'</a></li>');
                                             item.on('click',function(){
                                                 $('#'+newId).find('.topTempPSUtilView').html(val[0]);
                                                 $(this).closest('div.input-append').find('input').val(idx).trigger('change');
@@ -584,7 +584,7 @@ $(function() {
                                     $('#'+newId).find('.topTempShowPS,.topTempShowCMD,.toptempTestCMDOutContainer').hide();
                                     $('#'+newId).find('.topTempShowGC').show();
                                     $.each(self.GcodePred[newVal],function(idx,val){
-                                        var item = $('<li><a href="#" data->'+idx+'</a></li>');
+                                        var item = $('<li><a href="#">'+idx+'</a></li>');
                                         item.on('click',function(){
                                             $(this).closest('div.input-append').find('input').val(val).trigger('change');
                                         });
