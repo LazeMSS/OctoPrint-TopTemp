@@ -201,7 +201,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # self.defaultsCustom = {'cmd':'','name':'','interval': 25, 'type':'cmd', 'isTemp' : True}
 
         for key in self.tempCmds:
-            if self.tempCmds[key][1] != False:
+            if self.tempCmds[key][2] != None:
                 self.debugOut("Adding default CPU temp")
                 # Make template
                 temp = self._merge_dictionaries(self.tempTemplate.copy(),self.defaultsCustom.copy())
@@ -466,14 +466,14 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 code, out, err = self.runcommand(self.tempCmds[key][0])
                 out = out.rstrip("\n")
                 if code or err:
-                    #self._logger.debug("ERROR 1:-------------------------------------------------------------%s %s",err,code)
+                    # self._logger.debug("ERROR 1:-------------------------------------------------------------%s %s",err,code)
                     pass
                 else:
                     if out.replace('.','',1).isdigit():
-                        #self._logger.debug("OK-------------------------------------------------------------%s",out)
+                        # self._logger.debug("OK-------------------------------------------------------------%s %s",out,self.tempCmds[key][0])
                         self.tempCmds[key][2] = float(out)
                     else:
-                        # self._logger.debug("ERROR 2:-------------------------------------------------------------%s",out)
+                        self._logger.debug("ERROR 2:-------------------------------------------------------------%s",out)
                         pass
             else:
                 self._logger.debug("Not found:-------------------------------------------------------------%s",key)
