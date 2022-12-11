@@ -232,4 +232,9 @@ body.TopTemPreviewON div#settings_dialog {
     color: #333;
 }
 
+.topTempHideHard{
+    display: none !important;
+}
+
+
 /* TopTemp END */

@@ -60,7 +60,15 @@ $(function() {
             var iSettings = self.getSettings(name);
 
             // Do know this or want it shown
-            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget()) || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true) || ('waitForPrint' in iSettings && iSettings.waitForPrint() && !self.connection.isPrinting()) ){
+            if (typeof iSettings == "undefined"
+                || iSettings.show() == false
+                || data.actual == null
+                || data.actual == undefined
+                || (data.target == 0 && iSettings.hideOnNoTarget())
+                || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true)
+                || ('waitForPrint' in iSettings && iSettings.waitForPrint() && !self.connection.isPrinting())
+                ||  ('hideIfNoPrinter' in iSettings && iSettings.hideIfNoPrinter() && !self.tempModel.isOperational())
+            ){
                 $('#navbar_plugin_toptemp_'+name).hide();
                 $('#navbar_plugin_toptemp_'+name+'_divider').hide();
                 return;
@@ -107,6 +115,12 @@ $(function() {
                     var reval = 0;
                     graphData = {'series' : [self.tempModel.temperatures[name].actual.slice(-300).map(function(val,i){return val[1]})]};
                 }
+
+                var MinYVal = reval;
+                if (iSettings.gMin() != ""){
+                    MinYVal = iSettings.gMin()*1;
+                }
+
                 // DO we have what we need
                 if (graphData != null && typeof Chartist == "object"){
                     var graphOptions =  {
@@ -121,17 +135,20 @@ $(function() {
                             showGrid: false,
                             padding: 0,
                             offset: 0,
-                            low: reval,
+                            low: MinYVal,
                             type: Chartist.AutoScaleAxis,
                             referenceValue: reval
                         },
-                        low: reval,
+                        low: MinYVal,
                         fullWidth: true,
                         showPoint: false,
                         lineSmooth: false,
                         showGridBackground: false,
                         chartPadding: 0,
                         labelOffset: 0
+                    }
+                    if (iSettings.gMax() != ""){
+                        graphOptions.high = iSettings.gMax()*1;
                     }
                     new Chartist.Line('#TopTempGraph_'+name+'_graph', graphData,graphOptions);
                 }
@@ -144,7 +161,7 @@ $(function() {
             }
 
             // Append actual data
-            outputstr +=  self.formatTempLabel(name,data.actual,iSettings);
+            outputstr +=  self.formatTempLabel(name,data.actual,iSettings,true);
 
             // Append target if not custom type, we have a target and told to show it
             if (!customType && typeof data.target != undefined && data.target > 0){
@@ -172,7 +189,7 @@ $(function() {
                     if (!iSettings.showTargetArrow()){
                         outputstr += "/";
                     }
-                    outputstr += self.formatTempLabel(name,data.target,iSettings);
+                    outputstr += self.formatTempLabel(name,data.target,iSettings,true);
                 }
 
             }
@@ -200,7 +217,7 @@ $(function() {
         }
 
         // Pretty format a temperature label
-        self.formatTempLabel = function(name,value,iSettings){
+        self.formatTempLabel = function(name,value,iSettings,appendF){
             // No value or not a temperature
             if (value == null){
                 return value;
@@ -229,22 +246,57 @@ $(function() {
 
             // Temperature handling
             var formatSymbol = "C";
-            if (self.settings.fahrenheit()){
-                value = self.convertToF(value);
-                formatSymbol = "F";
-            }
 
-            if (iSettings.noDigits() != -1){
-                value = Number.parseFloat(value).toFixed(iSettings.noDigits());
+            // Join temps
+            if (appendF && self.settings.fahrenheit() && self.settings.showTempCombined()){
+                fVal = self.convertToF(value);
+                if (iSettings.noDigits() != -1){
+                    fVal = Number.parseFloat(fVal).toFixed(iSettings.noDigits());
+                }else{
+                    fVal = Number.parseFloat(fVal);
+                }
+                fVal = fVal.toString();
+                if (iSettings.decSep() != ""){
+                    fVal = fVal.replace(".",iSettings.decSep());
+                }
+                if (iSettings.showUnit()){
+                    fVal += '&#176;F';
+                }
+
+                dVal = value;
+                if (iSettings.noDigits() != -1){
+                    dVal = Number.parseFloat(dVal).toFixed(iSettings.noDigits());
+                }else{
+                    dVal = Number.parseFloat(dVal);
+                }
+                dVal = dVal.toString();
+                if (iSettings.decSep() != ""){
+                    dVal = dVal.replace(".",iSettings.decSep());
+                }
+                if (iSettings.showUnit()){
+                    dVal += '&#176;C';
+                }
+
+                value = fVal + "(" + dVal +")";
+
             }else{
-                value = Number.parseFloat(value);
-            }
-            value = value.toString();
-            if (iSettings.decSep() != ""){
-                value = value.replace(".",iSettings.decSep());
-            }
-            if (iSettings.showUnit()){
-                value += '&#176;'+formatSymbol;
+                if (self.settings.fahrenheit()){
+                    value = self.convertToF(value);
+                    formatSymbol = "F";
+                }
+
+                if (iSettings.noDigits() != -1){
+                    value = Number.parseFloat(value).toFixed(iSettings.noDigits());
+                }else{
+                    value = Number.parseFloat(value);
+                }
+                value = value.toString();
+                if (iSettings.decSep() != ""){
+                    value = value.replace(".",iSettings.decSep());
+                }
+                if (iSettings.showUnit()){
+                    value += '&#176;'+formatSymbol;
+                }
             }
             return value;
         }
@@ -667,10 +719,10 @@ $(function() {
                 direction: 'vertical',
                 dragoverBubble: false,
                 onStart: function(){
-                    $('#drop_overlay').addClass('UICHideHard');
+                    $('#drop_overlay').addClass('topTempHideHard');
                 },
                 onEnd: function(evt){
-                    $('#drop_overlay').removeClass('UICHideHard in');
+                    $('#drop_overlay').removeClass('topTempHideHard in');
                     if (self.previewOn){
                         var sortlist = $('#TopTempSortList >div').map(function(){return $(this).data('sortid')}).get();
                         $.each(sortlist,function(i,val){
@@ -947,6 +999,13 @@ $(function() {
 
         // UI ready
         self.onAllBound = function(){
+            // We dont wait for this :)
+            if (typeof Sortable != "function"){
+                var script = document.createElement('script');
+                script.src = '/plugin/toptemp/static/js/Sortable.min.js';
+                document.body.appendChild(script);
+            }
+
             // Set class
             $('#navbar_plugin_toptemp').addClass('navbar-text');
 
@@ -989,13 +1048,6 @@ $(function() {
                 return;
             }
 
-            // We dont wait for this :)
-            if (typeof Sortable != "function"){
-                var script = document.createElement('script');
-                script.src = '/plugin/toptemp/static/js/Sortable.min.js';
-                document.body.appendChild(script);
-            }
-
             // Wait for js
             if (!self.jsLoaded){
                 return;
@@ -1004,11 +1056,11 @@ $(function() {
             // Update printer operational
             self.tempModel.isOperational.subscribe(function(state){
                 if (state){
-                    $('#navbar_plugin_toptemp div.TopTempPrinter').show();
-                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical').show();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter, #navbar_plugin_toptemp div.TopTempHideNoPrinter').show();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical, #navbar_plugin_toptemp div.TopTempHideNoPrinter + span.divider-vertical').show();
                 }else if(self.settings.hideInactiveTemps()){
-                    $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
-                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical').hide();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter, #navbar_plugin_toptemp div.TopTempHideNoPrinter').hide();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical, #navbar_plugin_toptemp div.TopTempHideNoPrinter + span.divider-vertical').hide();
                 }
             });
 
@@ -1173,6 +1225,23 @@ $(function() {
             });
         }
 
+        self.findMinMaxAvg = function(data){
+            var items = data.length;
+            var lowValD = null;
+            var highValD = null;
+            var sum = 0;
+            data.map(function(val,i){
+                sum += val[1];
+                if (lowValD == null || lowValD > val[1]){
+                    lowValD = val[1];
+                }
+                if (highValD == null || highValD < val[1]){
+                    highValD = val[1];
+                }
+            });
+            return {'low':lowValD,'high':highValD,'avg':(sum/items)}
+        }
+
         self.updatePopover = function($thisID,$isCustom,iSettings){
             var mainItem = $('#navbar_plugin_toptemp_'+$thisID);
             // Check if open or not
@@ -1187,20 +1256,23 @@ $(function() {
             if ($('#TopTempPopoverText_'+$thisID).length){
                 if ($isCustom){
                     if ($thisID in self.customHistory){
+                        var stats = self.findMinMaxAvg(self.customHistory[$thisID]);
                         var actual = self.customHistory[$thisID][self.customHistory[$thisID].length-1][1];
-                        var output = '<div class="pull-right"><small>Current: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div>';
+                        var output = '<div class="pull-left"><small>Current: '+self.formatTempLabel($thisID,actual,iSettings,false)+'</small></div><div class="pull-right"><small>Max: '+self.formatTempLabel($thisID,stats.high,iSettings,false)+' &middot; Min: '+self.formatTempLabel($thisID,stats.low,iSettings,false)+' &middot; Avg: '+self.formatTempLabel($thisID,stats.avg,iSettings,false)+'</small></div>';
                         $('#TopTempPopoverText_'+$thisID).html(output);
                     }
                 }else{
+                    var stats = self.findMinMaxAvg(self.tempModel.temperatures[$thisID].actual);
                     var actual = self.tempModel.temperatures[$thisID].actual[self.tempModel.temperatures[$thisID].actual.length-1][1];
                     var target = self.tempModel.temperatures[$thisID].target[self.tempModel.temperatures[$thisID].target.length-1][1];
-                    var output = '<div class="pull-left"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div><div class="pull-right"><small>Target: ';
+                    var output = '<div class="pull-left"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings,false)+'</small></div><div class="pull-right"><small>Target: ';
                     if (target == 0){
                         output += 'Off';
                     }else{
-                        output += self.formatTempLabel($thisID,target,iSettings);
+                        output += self.formatTempLabel($thisID,target,iSettings,false);
                     }
                     output += '</small></div>';
+                    output += '<div class="text-center"><small>Max: '+self.formatTempLabel($thisID,stats.high,iSettings,false)+' &middot; Min: '+self.formatTempLabel($thisID,stats.low,iSettings,false)+' &middot; Avg: '+self.formatTempLabel($thisID,stats.avg,iSettings,false)+'</small></div>'
                     $('#TopTempPopoverText_'+$thisID).html(output);
                 }
             }
@@ -1228,6 +1300,10 @@ $(function() {
                 }
             }
 
+            var maxHis = self.popoverGHist;
+            if (iSettings.gHisSecs() > 0){
+                maxHis = 0 - iSettings.gHisSecs();
+            }
             // Custom data or not?
             if ($isCustom){
                 // No data?!
@@ -1244,7 +1320,7 @@ $(function() {
                 $.each(temp,function(x,val){
                     var seconds = val[0]-nowTs;
                     // only get last 10 min
-                    if (seconds < self.popoverGHist){
+                    if (seconds < maxHis){
                         return false;
                     }
                     dataFound++;
@@ -1295,7 +1371,7 @@ $(function() {
                     $.each(temp,function(x,val){
                         var seconds = Math.round((val[0]-nowTs)/1000);
                         // only get last 10 min
-                        if (seconds < self.popoverGHist && dataFound > 10){
+                        if (seconds < maxHis && dataFound > 10){
                             return false;
                         }
                         dataFound++;
@@ -1314,6 +1390,15 @@ $(function() {
                         {'data':buildSeries([...self.tempModel.temperatures[$thisID].target]),'className':'ct-series-g'},
                     ]
                 };
+            }
+
+            var MinYVal = reval;
+            if (iSettings.gMin() != ""){
+                MinYVal = iSettings.gMin()*1;
+            }
+
+            if (iSettings.gMax() != ""){
+                varHigh = iSettings.gMax()*1;
             }
 
             // Now build it
@@ -1347,9 +1432,9 @@ $(function() {
                     scaleMinSpace: 20,
                     onlyInteger: true,
                     referenceValue: reval,
-                    low: reval,
+                    low: MinYVal,
                 },
-                low: reval,
+                low: MinYVal,
                 showLine: true,
                 showPoint: false,
                 showArea: false,
@@ -1426,6 +1511,9 @@ $(function() {
                 if (localSettings.waitForPrint()){
                     className += " TopTempWaitPrinter";
                 }
+                if (localSettings.hideIfNoPrinter()){
+                    className += " TopTempHideNoPrinter";
+                }
             }
             if (self.settings.leftAlignIcons()){
                 className += " IconsLeft";
@@ -1471,10 +1559,25 @@ $(function() {
 
         // Add CSS for the graphs
         self.setGraphStyle = function(name,settings){
+            var important = "";
+            if (settings.forceStyle()){
+                important = " !important";
+            }
             // Remove old
             $('#TopTempGraph_'+name+'_style').remove();
+
+            var styleSet = `
+            #TopTempGraph_${name}_graph{
+                height:${settings.height()}%${important};
+            }
+            #TopTempGraph_${name}_graph.TopTempGraph > svg >g .ct-line{
+                stroke-width: ${settings.width()}px${important};
+                stroke-opacity: ${settings.opa()}${important};
+                stroke: ${settings.color()}${important};
+            }`;
+
             // Build new
-            $('head').append('<style id="TopTempGraph_'+name+'_style">\n#TopTempGraph_'+name+'_graph{\nheight:'+settings.height()+'%\n}\n#TopTempGraph_'+name+'_graph.TopTempGraph > svg >g .ct-line{\nstroke-width: '+settings.width()+'px;\nstroke-opacity: '+settings.opa()+';\nstroke: '+settings.color()+';\n}\n</style>'    );
+            $('head').append('<style id="TopTempGraph_'+name+'_style">\n'+styleSet+'</style>');
             // Show the graph?
             if (settings.show){
                 $('#TopTempGraph_'+name+'_graph').show();

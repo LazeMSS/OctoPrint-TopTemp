@@ -70,6 +70,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.defaultConfig = {
             'firstRun' : True,
             'fahrenheit' : False,
+            'showTempCombined': False,
             'leftAlignIcons' : False,
             'hideInactiveTemps' : True,
             'clickPopover' : False,
@@ -97,9 +98,13 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             'noDigits': 0,
             'showUnit': True,
             'decSep': ',',
+            'gMin': '',
+            'gMax': '',
+            'gHisSecs': 600,
             'graphSettings': {
                 'height': 50,
                 'show': True,
+                'forceStyle': False,
                 'opa': 0.2,
                 'width': 1,
                 'color' : '#000000',
@@ -108,7 +113,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         }
 
         # type can be cmd, gcIn, gcOut, psutil
-        self.defaultsCustom = {'cmd':'','name':'','interval': 25, 'type':'cmd', 'isTemp' : True , 'waitForPrint' : False, 'unit' : '', 'postCalc' : None}
+        self.defaultsCustom = {'cmd':'','name':'','interval': 25, 'type':'cmd', 'isTemp' : True , 'waitForPrint' : False, 'hideIfNoPrinter': False, 'unit' : '', 'postCalc' : None}
 
     # ----------------------------------------------------------------------------------------------------------------
     # Lets get started
