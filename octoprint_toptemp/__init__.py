@@ -70,6 +70,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.defaultConfig = {
             'firstRun' : True,
             'fahrenheit' : False,
+            'showTempCombined': False,
             'leftAlignIcons' : False,
             'hideInactiveTemps' : True,
             'clickPopover' : False,

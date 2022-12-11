@@ -32,6 +32,13 @@
                     </label>
                 </div>
             </div>
+            <div class="control-group" title="Show temperatures in both celsius and fahrenheit" data-bind="visible: settings.plugins.toptemp.fahrenheit">
+                <div class="controls">
+                    <label class="checkbox">
+                        <input type="checkbox" data-bind="checked: settings.plugins.toptemp.showTempCombined"> {{ _('Also show celsius') }}
+                    </label>
+                </div>
+            </div>
             <div class="control-group" title="Align icons to the left of the readouts">
                 <div class="controls">
                     <label class="checkbox">

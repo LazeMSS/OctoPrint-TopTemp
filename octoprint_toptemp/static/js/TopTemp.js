@@ -153,7 +153,7 @@ $(function() {
             }
 
             // Append actual data
-            outputstr +=  self.formatTempLabel(name,data.actual,iSettings);
+            outputstr +=  self.formatTempLabel(name,data.actual,iSettings,true);
 
             // Append target if not custom type, we have a target and told to show it
             if (!customType && typeof data.target != undefined && data.target > 0){
@@ -181,7 +181,7 @@ $(function() {
                     if (!iSettings.showTargetArrow()){
                         outputstr += "/";
                     }
-                    outputstr += self.formatTempLabel(name,data.target,iSettings);
+                    outputstr += self.formatTempLabel(name,data.target,iSettings,true);
                 }
 
             }
@@ -209,7 +209,7 @@ $(function() {
         }
 
         // Pretty format a temperature label
-        self.formatTempLabel = function(name,value,iSettings){
+        self.formatTempLabel = function(name,value,iSettings,appendF){
             // No value or not a temperature
             if (value == null){
                 return value;
@@ -238,22 +238,57 @@ $(function() {
 
             // Temperature handling
             var formatSymbol = "C";
-            if (self.settings.fahrenheit()){
-                value = self.convertToF(value);
-                formatSymbol = "F";
-            }
 
-            if (iSettings.noDigits() != -1){
-                value = Number.parseFloat(value).toFixed(iSettings.noDigits());
+            // Join temps
+            if (appendF && self.settings.fahrenheit() && self.settings.showTempCombined()){
+                fVal = self.convertToF(value);
+                if (iSettings.noDigits() != -1){
+                    fVal = Number.parseFloat(fVal).toFixed(iSettings.noDigits());
+                }else{
+                    fVal = Number.parseFloat(fVal);
+                }
+                fVal = fVal.toString();
+                if (iSettings.decSep() != ""){
+                    fVal = fVal.replace(".",iSettings.decSep());
+                }
+                if (iSettings.showUnit()){
+                    fVal += '&#176;F';
+                }
+
+                dVal = value;
+                if (iSettings.noDigits() != -1){
+                    dVal = Number.parseFloat(dVal).toFixed(iSettings.noDigits());
+                }else{
+                    dVal = Number.parseFloat(dVal);
+                }
+                dVal = dVal.toString();
+                if (iSettings.decSep() != ""){
+                    dVal = dVal.replace(".",iSettings.decSep());
+                }
+                if (iSettings.showUnit()){
+                    dVal += '&#176;C';
+                }
+
+                value = fVal + "(" + dVal +")";
+
             }else{
-                value = Number.parseFloat(value);
-            }
-            value = value.toString();
-            if (iSettings.decSep() != ""){
-                value = value.replace(".",iSettings.decSep());
-            }
-            if (iSettings.showUnit()){
-                value += '&#176;'+formatSymbol;
+                if (self.settings.fahrenheit()){
+                    value = self.convertToF(value);
+                    formatSymbol = "F";
+                }
+
+                if (iSettings.noDigits() != -1){
+                    value = Number.parseFloat(value).toFixed(iSettings.noDigits());
+                }else{
+                    value = Number.parseFloat(value);
+                }
+                value = value.toString();
+                if (iSettings.decSep() != ""){
+                    value = value.replace(".",iSettings.decSep());
+                }
+                if (iSettings.showUnit()){
+                    value += '&#176;'+formatSymbol;
+                }
             }
             return value;
         }
@@ -1215,21 +1250,21 @@ $(function() {
                     if ($thisID in self.customHistory){
                         var stats = self.findMinMaxAvg(self.customHistory[$thisID]);
                         var actual = self.customHistory[$thisID][self.customHistory[$thisID].length-1][1];
-                        var output = '<div class="pull-left"><small>Current: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div><div class="pull-right"><small>Max: '+self.formatTempLabel($thisID,stats.high,iSettings)+' &middot; Min: '+self.formatTempLabel($thisID,stats.low,iSettings)+' &middot; Avg: '+self.formatTempLabel($thisID,stats.avg,iSettings)+'</small></div>';
+                        var output = '<div class="pull-left"><small>Current: '+self.formatTempLabel($thisID,actual,iSettings,false)+'</small></div><div class="pull-right"><small>Max: '+self.formatTempLabel($thisID,stats.high,iSettings,false)+' &middot; Min: '+self.formatTempLabel($thisID,stats.low,iSettings,false)+' &middot; Avg: '+self.formatTempLabel($thisID,stats.avg,iSettings,false)+'</small></div>';
                         $('#TopTempPopoverText_'+$thisID).html(output);
                     }
                 }else{
                     var stats = self.findMinMaxAvg(self.tempModel.temperatures[$thisID].actual);
                     var actual = self.tempModel.temperatures[$thisID].actual[self.tempModel.temperatures[$thisID].actual.length-1][1];
                     var target = self.tempModel.temperatures[$thisID].target[self.tempModel.temperatures[$thisID].target.length-1][1];
-                    var output = '<div class="pull-left"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div><div class="pull-right"><small>Target: ';
+                    var output = '<div class="pull-left"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings,false)+'</small></div><div class="pull-right"><small>Target: ';
                     if (target == 0){
                         output += 'Off';
                     }else{
-                        output += self.formatTempLabel($thisID,target,iSettings);
+                        output += self.formatTempLabel($thisID,target,iSettings,false);
                     }
                     output += '</small></div>';
-                    output += '<div class="text-center"><small>Max: '+self.formatTempLabel($thisID,stats.high,iSettings)+' &middot; Min: '+self.formatTempLabel($thisID,stats.low,iSettings)+' &middot; Avg: '+self.formatTempLabel($thisID,stats.avg,iSettings)+'</small></div>'
+                    output += '<div class="text-center"><small>Max: '+self.formatTempLabel($thisID,stats.high,iSettings,false)+' &middot; Min: '+self.formatTempLabel($thisID,stats.low,iSettings,false)+' &middot; Avg: '+self.formatTempLabel($thisID,stats.avg,iSettings,false)+'</small></div>'
                     $('#TopTempPopoverText_'+$thisID).html(output);
                 }
             }
