@@ -97,6 +97,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             'noDigits': 0,
             'showUnit': True,
             'decSep': ',',
+            'gMin': '',
+            'gMax': '',
             'graphSettings': {
                 'height': 50,
                 'show': True,

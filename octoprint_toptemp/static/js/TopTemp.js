@@ -107,6 +107,12 @@ $(function() {
                     var reval = 0;
                     graphData = {'series' : [self.tempModel.temperatures[name].actual.slice(-300).map(function(val,i){return val[1]})]};
                 }
+
+                var MinYVal = reval;
+                if (iSettings.gMin() != ""){
+                    MinYVal = iSettings.gMin()*1;
+                }
+
                 // DO we have what we need
                 if (graphData != null && typeof Chartist == "object"){
                     var graphOptions =  {
@@ -121,17 +127,20 @@ $(function() {
                             showGrid: false,
                             padding: 0,
                             offset: 0,
-                            low: reval,
+                            low: MinYVal,
                             type: Chartist.AutoScaleAxis,
                             referenceValue: reval
                         },
-                        low: reval,
+                        low: MinYVal,
                         fullWidth: true,
                         showPoint: false,
                         lineSmooth: false,
                         showGridBackground: false,
                         chartPadding: 0,
                         labelOffset: 0
+                    }
+                    if (iSettings.gMax() != ""){
+                        graphOptions.high = iSettings.gMax()*1;
                     }
                     new Chartist.Line('#TopTempGraph_'+name+'_graph', graphData,graphOptions);
                 }
@@ -1173,6 +1182,23 @@ $(function() {
             });
         }
 
+        self.findMinMaxAvg = function(data){
+            var items = data.length;
+            var lowValD = null;
+            var highValD = null;
+            var sum = 0;
+            data.map(function(val,i){
+                sum += val[1];
+                if (lowValD == null || lowValD > val[1]){
+                    lowValD = val[1];
+                }
+                if (highValD == null || highValD < val[1]){
+                    highValD = val[1];
+                }
+            });
+            return {'low':lowValD,'high':highValD,'avg':(sum/items)}
+        }
+
         self.updatePopover = function($thisID,$isCustom,iSettings){
             var mainItem = $('#navbar_plugin_toptemp_'+$thisID);
             // Check if open or not
@@ -1187,11 +1213,13 @@ $(function() {
             if ($('#TopTempPopoverText_'+$thisID).length){
                 if ($isCustom){
                     if ($thisID in self.customHistory){
+                        var stats = self.findMinMaxAvg(self.customHistory[$thisID]);
                         var actual = self.customHistory[$thisID][self.customHistory[$thisID].length-1][1];
-                        var output = '<div class="pull-right"><small>Current: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div>';
+                        var output = '<div class="pull-left"><small>Current: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div><div class="pull-right"><small>Max: '+self.formatTempLabel($thisID,stats.high,iSettings)+' &middot; Min: '+self.formatTempLabel($thisID,stats.low,iSettings)+' &middot; Avg: '+self.formatTempLabel($thisID,stats.avg,iSettings)+'</small></div>';
                         $('#TopTempPopoverText_'+$thisID).html(output);
                     }
                 }else{
+                    var stats = self.findMinMaxAvg(self.tempModel.temperatures[$thisID].actual);
                     var actual = self.tempModel.temperatures[$thisID].actual[self.tempModel.temperatures[$thisID].actual.length-1][1];
                     var target = self.tempModel.temperatures[$thisID].target[self.tempModel.temperatures[$thisID].target.length-1][1];
                     var output = '<div class="pull-left"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings)+'</small></div><div class="pull-right"><small>Target: ';
@@ -1201,6 +1229,7 @@ $(function() {
                         output += self.formatTempLabel($thisID,target,iSettings);
                     }
                     output += '</small></div>';
+                    output += '<div class="text-center"><small>Max: '+self.formatTempLabel($thisID,stats.high,iSettings)+' &middot; Min: '+self.formatTempLabel($thisID,stats.low,iSettings)+' &middot; Avg: '+self.formatTempLabel($thisID,stats.avg,iSettings)+'</small></div>'
                     $('#TopTempPopoverText_'+$thisID).html(output);
                 }
             }
@@ -1316,6 +1345,15 @@ $(function() {
                 };
             }
 
+            var MinYVal = reval;
+            if (iSettings.gMin() != ""){
+                MinYVal = iSettings.gMin()*1;
+            }
+
+            if (iSettings.gMax() != ""){
+                varHigh = iSettings.gMax()*1;
+            }
+
             // Now build it
             var options = {
                 axisX: {
@@ -1347,9 +1385,9 @@ $(function() {
                     scaleMinSpace: 20,
                     onlyInteger: true,
                     referenceValue: reval,
-                    low: reval,
+                    low: MinYVal,
                 },
-                low: reval,
+                low: MinYVal,
                 showLine: true,
                 showPoint: false,
                 showArea: false,
