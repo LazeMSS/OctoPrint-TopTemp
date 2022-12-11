@@ -719,10 +719,10 @@ $(function() {
                 direction: 'vertical',
                 dragoverBubble: false,
                 onStart: function(){
-                    $('#drop_overlay').addClass('UICHideHard');
+                    $('#drop_overlay').addClass('topTempHideHard');
                 },
                 onEnd: function(evt){
-                    $('#drop_overlay').removeClass('UICHideHard in');
+                    $('#drop_overlay').removeClass('topTempHideHard in');
                     if (self.previewOn){
                         var sortlist = $('#TopTempSortList >div').map(function(){return $(this).data('sortid')}).get();
                         $.each(sortlist,function(i,val){
