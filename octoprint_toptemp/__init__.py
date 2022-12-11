@@ -103,6 +103,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             'graphSettings': {
                 'height': 50,
                 'show': True,
+                'forceStyle': False,
                 'opa': 0.2,
                 'width': 1,
                 'color' : '#000000',

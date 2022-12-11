@@ -1544,10 +1544,25 @@ $(function() {
 
         // Add CSS for the graphs
         self.setGraphStyle = function(name,settings){
+            var important = "";
+            if (settings.forceStyle()){
+                important = " !important";
+            }
             // Remove old
             $('#TopTempGraph_'+name+'_style').remove();
+
+            var styleSet = `
+            #TopTempGraph_${name}_graph{
+                height:${settings.height()}%${important};
+            }
+            #TopTempGraph_${name}_graph.TopTempGraph > svg >g .ct-line{
+                stroke-width: ${settings.width()}px${important};
+                stroke-opacity: ${settings.opa()}${important};
+                stroke: ${settings.color()}${important};
+            }`;
+
             // Build new
-            $('head').append('<style id="TopTempGraph_'+name+'_style">\n#TopTempGraph_'+name+'_graph{\nheight:'+settings.height()+'%\n}\n#TopTempGraph_'+name+'_graph.TopTempGraph > svg >g .ct-line{\nstroke-width: '+settings.width()+'px;\nstroke-opacity: '+settings.opa()+';\nstroke: '+settings.color()+';\n}\n</style>'    );
+            $('head').append('<style id="TopTempGraph_'+name+'_style">\n'+styleSet+'</style>');
             // Show the graph?
             if (settings.show){
                 $('#TopTempGraph_'+name+'_graph').show();

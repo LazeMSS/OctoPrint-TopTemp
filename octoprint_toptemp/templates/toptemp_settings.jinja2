@@ -199,6 +199,13 @@
                     </div>
                 </div>
                 <div class="TopTempGraphSetting" data-bind="visible: settings.plugins.toptemp.bed.graphSettings.show">
+                    <div class="control-group" title="Overrule any themeing styles with these settings">
+                        <div class="controls">
+                            <label class="checkbox">
+                                <input type="checkbox" data-bind="checked: settings.plugins.toptemp.bed.graphSettings.forceStyle"> {{ _('Overrule themeing') }}
+                            </label>
+                        </div>
+                    </div>
                     <div class="control-group" title="Graph transparency">
                         <label class="control-label">Graph transparency</label>
                         <div class="controls">
@@ -353,6 +360,13 @@
                     </div>
                 </div>
                 <div class="TopTempGraphSetting" data-bind="visible: settings.plugins.toptemp.chamber.graphSettings.show">
+                    <div class="control-group" title="Overrule any themeing styles with these settings">
+                        <div class="controls">
+                            <label class="checkbox">
+                                <input type="checkbox" data-bind="checked: settings.plugins.toptemp.chamber.graphSettings.forceStyle"> {{ _('Overrule themeing') }}
+                            </label>
+                        </div>
+                    </div>
                     <div class="control-group" title="Graph transparency">
                         <label class="control-label">Graph transparency</label>
                         <div class="controls">
@@ -514,6 +528,13 @@
                     </div>
                 </div>
                 <div class="TopTempGraphSetting" data-bind="visible: $parent.settings.plugins.toptemp['tool'+$index()].graphSettings.show">
+                    <div class="control-group" title="Overrule any themeing styles with these settings">
+                        <div class="controls">
+                            <label class="checkbox">
+                                <input type="checkbox" data-bind="checked: $parent.settings.plugins.toptemp['tool'+$index()].graphSettings.forceStyle"> {{ _('Overrule themeing') }}
+                            </label>
+                        </div>
+                    </div>
                     <div class="control-group" title="Graph transparency">
                         <label class="control-label">Graph transparency</label>
                         <div class="controls">
@@ -729,6 +750,13 @@
                     </div>
                 </div>
                 <div class="TopTempGraphSetting" data-visible="graphSettings.show">
+                    <div class="control-group" title="Overrule any themeing styles with these settings">
+                        <div class="controls">
+                            <label class="checkbox">
+                                <input type="checkbox" data-settings="graphSettings.forceStyle"> {{ _('Overrule themeing') }}
+                            </label>
+                        </div>
+                    </div>
                     <div class="control-group" title="Graph transparency">
                         <label class="control-label">Graph transparency</label>
                         <div class="controls">
