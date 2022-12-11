@@ -999,6 +999,13 @@ $(function() {
 
         // UI ready
         self.onAllBound = function(){
+            // We dont wait for this :)
+            if (typeof Sortable != "function"){
+                var script = document.createElement('script');
+                script.src = '/plugin/toptemp/static/js/Sortable.min.js';
+                document.body.appendChild(script);
+            }
+
             // Set class
             $('#navbar_plugin_toptemp').addClass('navbar-text');
 
@@ -1039,13 +1046,6 @@ $(function() {
                 script.src = './plugin/toptemp/static/js/chartist-plugin-axistitle.min.js';
                 document.body.appendChild(script);
                 return;
-            }
-
-            // We dont wait for this :)
-            if (typeof Sortable != "function"){
-                var script = document.createElement('script');
-                script.src = '/plugin/toptemp/static/js/Sortable.min.js';
-                document.body.appendChild(script);
             }
 
             // Wait for js
@@ -1300,6 +1300,10 @@ $(function() {
                 }
             }
 
+            var maxHis = self.popoverGHist;
+            if (iSettings.gHisSecs() > 0){
+                maxHis = 0 - iSettings.gHisSecs();
+            }
             // Custom data or not?
             if ($isCustom){
                 // No data?!
@@ -1316,7 +1320,7 @@ $(function() {
                 $.each(temp,function(x,val){
                     var seconds = val[0]-nowTs;
                     // only get last 10 min
-                    if (seconds < self.popoverGHist){
+                    if (seconds < maxHis){
                         return false;
                     }
                     dataFound++;
@@ -1367,7 +1371,7 @@ $(function() {
                     $.each(temp,function(x,val){
                         var seconds = Math.round((val[0]-nowTs)/1000);
                         // only get last 10 min
-                        if (seconds < self.popoverGHist && dataFound > 10){
+                        if (seconds < maxHis && dataFound > 10){
                             return false;
                         }
                         dataFound++;

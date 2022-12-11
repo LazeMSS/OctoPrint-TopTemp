@@ -183,8 +183,14 @@
                         </label>
                     </div>
                 </div>
+                <div class="control-group" title="Graph history timescale">
+                    <label class="control-label">Show data this many seconds old on graph</label>
+                    <div class="controls">
+                        <input type="number" data-bind="value: settings.plugins.toptemp.bed.gHisSecs" placeholder="seconds">
+                    </div>
+                </div>
                 <div class="control-group" title="Graph min and max">
-                    <label class="control-label">Force graph min,max</label>
+                    <label class="control-label">Force graph Y min,max</label>
                     <div class="controls">
                         <input type="number" class="input-mini" data-bind="value: settings.plugins.toptemp.bed.gMin" placeholder="min">
                         <input type="number" class="input-mini" data-bind="value: settings.plugins.toptemp.bed.gMax" placeholder="max">
@@ -344,8 +350,14 @@
                         </label>
                     </div>
                 </div>
+                <div class="control-group" title="Graph history timescale">
+                    <label class="control-label">Show data this many seconds old on graph</label>
+                    <div class="controls">
+                        <input type="number" data-bind="value: settings.plugins.toptemp.chamber.gHisSecs" placeholder="seconds">
+                    </div>
+                </div>
                 <div class="control-group" title="Graph min and max">
-                    <label class="control-label">Force graph min,max</label>
+                    <label class="control-label">Force graph Y min,max</label>
                     <div class="controls">
                         <input type="number" class="input-mini" data-bind="value: settings.plugins.toptemp.chamber.gMin" placeholder="Min">
                         <input type="number" class="input-mini" data-bind="value: settings.plugins.toptemp.chamber.gMax" placeholder="Max">
@@ -512,8 +524,14 @@
                         </label>
                     </div>
                 </div>
+                <div class="control-group" title="Graph history timescale">
+                    <label class="control-label">Show data this many seconds old on graph</label>
+                    <div class="controls">
+                        <input type="number" data-bind="value: $parent.settings.plugins.toptemp['tool'+$index()].gHisSecs" placeholder="seconds">
+                    </div>
+                </div>
                 <div class="control-group" title="Graph min and max">
-                    <label class="control-label">Force graph min,max</label>
+                    <label class="control-label">Force graph Y min,max</label>
                     <div class="controls">
                         <input type="number" class="input-mini" data-bind="value: $parent.settings.plugins.toptemp['tool'+$index()].gMin" placeholder="Min">
                         <input type="number" class="input-mini" data-bind="value: $parent.settings.plugins.toptemp['tool'+$index()].gMax" placeholder="Max">
@@ -742,8 +760,14 @@
                         </label>
                     </div>
                 </div>
+                <div class="control-group" title="Graph history timescale">
+                    <label class="control-label">Show data this many seconds old on graph</label>
+                    <div class="controls">
+                        <input type="number" data-settings="gHisSecs" placeholder="seconds">
+                    </div>
+                </div>
                 <div class="control-group" title="Graph min and max">
-                    <label class="control-label">Force graph min,max</label>
+                    <label class="control-label">Force graph Y min,max</label>
                     <div class="controls">
                         <input type="number" class="input-mini" data-settings="gMin" placeholder="Min">
                         <input type="number" class="input-mini" data-settings="gMax" placeholder="Max">

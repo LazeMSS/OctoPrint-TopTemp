@@ -100,6 +100,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             'decSep': ',',
             'gMin': '',
             'gMax': '',
+            'gHisSecs': 600,
             'graphSettings': {
                 'height': 50,
                 'show': True,
