@@ -60,7 +60,15 @@ $(function() {
             var iSettings = self.getSettings(name);
 
             // Do know this or want it shown
-            if (typeof iSettings == "undefined" || iSettings.show() == false || data.actual == null || data.actual == undefined || (data.target == 0 && iSettings.hideOnNoTarget()) || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true) || ('waitForPrint' in iSettings && iSettings.waitForPrint() && !self.connection.isPrinting()) ){
+            if (typeof iSettings == "undefined"
+                || iSettings.show() == false
+                || data.actual == null
+                || data.actual == undefined
+                || (data.target == 0 && iSettings.hideOnNoTarget())
+                || (!customType && self.settings.hideInactiveTemps() && self.tempModel.isOperational() !== true)
+                || ('waitForPrint' in iSettings && iSettings.waitForPrint() && !self.connection.isPrinting())
+                ||  ('hideIfNoPrinter' in iSettings && iSettings.hideIfNoPrinter() && !self.tempModel.isOperational())
+            ){
                 $('#navbar_plugin_toptemp_'+name).hide();
                 $('#navbar_plugin_toptemp_'+name+'_divider').hide();
                 return;
@@ -1048,11 +1056,11 @@ $(function() {
             // Update printer operational
             self.tempModel.isOperational.subscribe(function(state){
                 if (state){
-                    $('#navbar_plugin_toptemp div.TopTempPrinter').show();
-                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical').show();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter, #navbar_plugin_toptemp div.TopTempHideNoPrinter').show();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical, #navbar_plugin_toptemp div.TopTempHideNoPrinter + span.divider-vertical').show();
                 }else if(self.settings.hideInactiveTemps()){
-                    $('#navbar_plugin_toptemp div.TopTempPrinter').hide();
-                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical').hide();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter, #navbar_plugin_toptemp div.TopTempHideNoPrinter').hide();
+                    $('#navbar_plugin_toptemp div.TopTempPrinter + span.divider-vertical, #navbar_plugin_toptemp div.TopTempHideNoPrinter + span.divider-vertical').hide();
                 }
             });
 
@@ -1498,6 +1506,9 @@ $(function() {
                 isCust = true;
                 if (localSettings.waitForPrint()){
                     className += " TopTempWaitPrinter";
+                }
+                if (localSettings.hideIfNoPrinter()){
+                    className += " TopTempHideNoPrinter";
                 }
             }
             if (self.settings.leftAlignIcons()){

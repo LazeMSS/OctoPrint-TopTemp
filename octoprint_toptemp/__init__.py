@@ -112,7 +112,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         }
 
         # type can be cmd, gcIn, gcOut, psutil
-        self.defaultsCustom = {'cmd':'','name':'','interval': 25, 'type':'cmd', 'isTemp' : True , 'waitForPrint' : False, 'unit' : '', 'postCalc' : None}
+        self.defaultsCustom = {'cmd':'','name':'','interval': 25, 'type':'cmd', 'isTemp' : True , 'waitForPrint' : False, 'hideIfNoPrinter': False, 'unit' : '', 'postCalc' : None}
 
     # ----------------------------------------------------------------------------------------------------------------
     # Lets get started
