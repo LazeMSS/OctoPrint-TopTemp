@@ -5,6 +5,7 @@ $(function() {
         var self = this;
 
         self.settingsViewModel = parameters[0];
+
         self.tempModel = parameters[1];
         self.connection = parameters[2];
         self.settings = {};

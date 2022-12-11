@@ -30,6 +30,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.timers = {}
         # holds the history data
         self.customHistory = {}
+        self.customMon = {}
 
         # List of cpu temp methods found
         self.tempCmds = {}
@@ -147,19 +148,19 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.checkCpuTempMethods()
         self.buildPsuUtil()
 
-        customMon = self._settings.get(["customMon"],merged=True,asdict=True)
+        self.customMon = self._settings.get(["customMon"],merged=True,asdict=True)
 
         # Should we update the custom mappings
-        if customMon:
+        if self.customMon:
             self.debugOut("Fixing custom monitors")
             newCust = {}
             # parse all and merge
-            for ckey in customMon:
+            for ckey in self.customMon:
                 temp = self._merge_dictionaries(self.tempTemplate.copy(),self.defaultsCustom.copy())
-                newCust[ckey] = self._merge_dictionaries(temp,customMon[ckey])
+                newCust[ckey] = self._merge_dictionaries(temp,self.customMon[ckey])
                 #self.debugOut(newCust[ckey].copy())
             # Save the new data
-            self._settings.set(["customMon"],newCust.copy(),True)
+            self._settings.set(["customMon"],newCust.copy(),force=True)
 
         # First run chek
         firstRun = self._settings.get(["firstRun"],merged=True,asdict=True)
@@ -170,7 +171,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         # Remove first run
         self.debugOut("First run")
-        self._settings.set(["firstRun"],False,True)
+        self._settings.set(["firstRun"],False,force=True)
 
         # Append default cpu monitor due to first run
         # self.tempTemplate = {
@@ -201,7 +202,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         # self.defaultsCustom = {'cmd':'','name':'','interval': 25, 'type':'cmd', 'isTemp' : True}
 
         for key in self.tempCmds:
-            if self.tempCmds[key][1] != False:
+            if self.tempCmds[key][2] != None:
                 self.debugOut("Adding default CPU temp")
                 # Make template
                 temp = self._merge_dictionaries(self.tempTemplate.copy(),self.defaultsCustom.copy())
@@ -239,7 +240,14 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         newCust['cu1']['unit'] = '%'
         self.debugOut(newCust)
 
-        self._settings.set(["customMon"],newCust,True)
+        self._settings.set(["customMon"],newCust,force=True)
+        self.customMon = newCust
+
+    # make sure changed customMons are returned
+    def on_settings_load(self):
+        returnData = self._settings.get([],merged=True, asdict=True)
+        returnData['customMon'] = self.customMon;
+        return returnData
 
     # Save handler - has a bit of hack to cleanup remove custom monitors
     def on_settings_save(self,data):
@@ -260,6 +268,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
             if 'delThis' in newData and newData['delThis'] == True:
                 # self._logger.info("Deleting: %s",ckey)
+                if ckey in self.timers:
+                    self.debugOut("Stopping timer: " + ckey + " command is getting deleted")
+                    self.timers[ckey].cancel()
                 pass
             else:
                 if 'new' in newData and newData['new'] == True:
@@ -315,46 +326,52 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             # self._logger.info("%s : %s",key,newCust[key]['name'])
             # self._logger.info(newCust[key])
 
-        del data['customMon']
         data['customMon'] = newCust.copy()
+
+        data['firstRun'] = False
+        self.customMon = newCust.copy();
+
+        #Needed to write all the data
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
-        # Needed to write all the data - when deleting
-        self._settings.set(["customMon"],newCust.copy(),True)
+
+        # we need to force save customMon because of the way complex array/object are handled by on_settings_save
+        self._settings.set(["customMon"],newCust,force=True)
 
         # update gcode monitors
         self.setGcodeMonNeed()
 
-        # Save first run or not
-        self._settings.set(["firstRun"],False)
-
+        return data
 
     # ----------------------------------------------------------------------------------------------------------------
     # default settings
     # ----------------------------------------------------------------------------------------------------------------
     def get_settings_defaults(self):
+        returnDefault = self.defaultConfig.copy()
+        returnDefault['customMon'] = {}
         # Lets try and build a default monitor to add to the default settings
 
         # Build default settings
         for key in self.tempItems:
-            self.defaultConfig[key] = self.tempTemplate.copy()
+            returnDefault[key] = self.tempTemplate.copy()
             # Fix label
-            self.defaultConfig[key]['label'] = key[0:1].upper() + ": "
-            self.defaultConfig[key]['icon'] = self.tempItems[key]
+            returnDefault[key]['label'] = key[0:1].upper() + ": "
+            returnDefault[key]['icon'] = self.tempItems[key]
 
         # build tools
         i = 0
         while i < self.noTools:
             toolname = 'tool'+str(i)
-            self.defaultConfig[toolname] = self.tempTemplate.copy()
-            self.defaultConfig[toolname]['appendIconNumber'] = True
+            returnDefault[toolname] = self.tempTemplate.copy()
+            returnDefault[toolname]['appendIconNumber'] = True
             # Fix label
-            self.defaultConfig[toolname]['label'] = "T" + str(i) + ": "
-            self.defaultConfig[toolname]['icon'] = "fas fa-fire"
+            returnDefault[toolname]['label'] = "T" + str(i) + ": "
+            returnDefault[toolname]['icon'] = "fas fa-fire"
             if i > 0:
-                self.defaultConfig[toolname]['show'] = False
+                returnDefault[toolname]['show'] = False
 
             i +=1
-        return self.defaultConfig
+
+        return returnDefault
 
     def buildPsuUtil(self):
         # Todo add network :)
@@ -466,14 +483,14 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 code, out, err = self.runcommand(self.tempCmds[key][0])
                 out = out.rstrip("\n")
                 if code or err:
-                    #self._logger.debug("ERROR 1:-------------------------------------------------------------%s %s",err,code)
+                    # self._logger.debug("ERROR 1:-------------------------------------------------------------%s %s",err,code)
                     pass
                 else:
                     if out.replace('.','',1).isdigit():
-                        #self._logger.debug("OK-------------------------------------------------------------%s",out)
+                        # self._logger.debug("OK-------------------------------------------------------------%s %s",out,self.tempCmds[key][0])
                         self.tempCmds[key][2] = float(out)
                     else:
-                        # self._logger.debug("ERROR 2:-------------------------------------------------------------%s",out)
+                        self._logger.debug("ERROR 2:-------------------------------------------------------------%s",out)
                         pass
             else:
                 self._logger.debug("Not found:-------------------------------------------------------------%s",key)
