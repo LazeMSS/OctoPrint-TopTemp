@@ -832,7 +832,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 if code or err:
                     repsonse = dict(success=False,error=err,returnCode=code,result=out)
                 else:
-                    if isinstance(out,(float, int)) or str(out).replace('.','',1).isdigit():
+                    if isinstance(out,(float, int)) or str(out).replace('.','',1).lstrip("-").isdigit():
                         repsonse = dict(success=True,error=err,returnCode=code,result=out)
                     else:
                         repsonse = dict(success=False,error="Not an value",returnCode=code,result=out)
@@ -872,7 +872,12 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                                 stderr=subprocess.PIPE,
                                 shell=True,
                                 universal_newlines=True)
-        std_out, std_err = proc.communicate()
+        try:
+            std_out, std_err = proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            return -1, "\""+cmd+"\" timed out", "Maximum execution time, 5 seconds, exceeded!"
+
         return proc.returncode, std_out.strip(), std_err
 
 

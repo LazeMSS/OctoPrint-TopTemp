@@ -236,5 +236,10 @@ body.TopTemPreviewON div#settings_dialog {
     display: none !important;
 }
 
+.toptempcolpic{
+    min-height: 30px;
+    padding: 0px;
+}
+
 
 /* TopTemp END */
