@@ -37,6 +37,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         self.psutilCPUHasRun = False
 
+        self.cmdTimeout = 30
+
         # List of psu
         self.psutilList = {
             'cpup'      : ['CPU usage %'],
@@ -873,7 +875,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                                 shell=True,
                                 universal_newlines=True)
         try:
-            std_out, std_err = proc.communicate(timeout=5)
+            std_out, std_err = proc.communicate(timeout=self.cmdTimeout)
         except subprocess.TimeoutExpired:
             proc.kill()
             return -1, "\""+cmd+"\" timed out", "Maximum execution time, 5 seconds, exceeded!"
