@@ -1504,15 +1504,22 @@ $(function() {
             var localSettings = self.getSettings(name);
             // Get name
             prettyName = self.getTempName(name);
+            var preHide = false;
             // Set type
             var isCust = false;
             if (self.isCustom(name)){
                 isCust = true;
                 if (localSettings.waitForPrint()){
                     className += " TopTempWaitPrinter";
+                    if (!self.connection.isPrinting()){
+                        preHide = true;
+                    }
                 }
                 if (localSettings.hideIfNoPrinter()){
                     className += " TopTempHideNoPrinter";
+                    if (!self.tempModel.isOperational()){
+                        preHide = true;
+                    }
                 }
             }
             if (self.settings.leftAlignIcons()){
@@ -1534,7 +1541,7 @@ $(function() {
             }
             $('#navbar_plugin_toptemp').append('<div title="'+prettyName+'" id="'+elname+'" class="'+className+'" data-toptempid="'+name+'" data-toptempcust="'+isCust+'"><div id="TopTempGraph_'+name+'_graph" class="TopTempGraph"></div><div id="navbar_plugin_toptemp_'+name+'_text" class="'+textClass+'"></div></div>'+sepTxt);
 
-            if (!localSettings.show()){
+            if (!localSettings.show() || preHide){
                 $('#'+elname).hide();
                 $('#'+elname+'_divider').hide();
             }
