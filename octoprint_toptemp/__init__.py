@@ -493,7 +493,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                     # self._logger.debug("ERROR 1:-------------------------------------------------------------%s %s",err,code)
                     pass
                 else:
-                    if out.replace('.','',1).isdigit():
+                    if self.checkStringIsVal(out):
                         # self._logger.debug("OK-------------------------------------------------------------%s %s",out,self.tempCmds[key][0])
                         self.tempCmds[key][2] = float(out)
                     else:
@@ -729,7 +729,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     def handleCustomData(self,indx,out,time):
         self.debugOut("Got custom data: " + str(out))
         # Check
-        if isinstance(out,(float, int)) or str(out).replace('.','',1).isdigit():
+        if isinstance(out,(float, int)) or self.checkStringIsVal(out):
             resultData = [time,float(out)]
             if indx not in self.customHistory:
                 self.customHistory[indx] = []
@@ -834,7 +834,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 if code or err:
                     repsonse = dict(success=False,error=err,returnCode=code,result=out)
                 else:
-                    if isinstance(out,(float, int)) or str(out).replace('.','',1).lstrip("-").isdigit():
+                    if isinstance(out,(float, int)) or self.checkStringIsVal(out):
                         repsonse = dict(success=True,error=err,returnCode=code,result=out)
                     else:
                         repsonse = dict(success=False,error="Not an value",returnCode=code,result=out)
@@ -946,6 +946,13 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             dataSet = {'time':time.time(),'type' : 'gcOut', 'data': cmd}
 
         self.gcodeQue.put(dataSet)
+
+    def checkStringIsVal(self,inputStr):
+        inputStr = str(inputStr)
+        if inputStr[0] in ["+", "-"]:
+            inputStr = inputStr[1:]
+        return inputStr.replace('.','',1).isdigit()
+
 
 __plugin_name__ = "Top Temp"
 __plugin_pythoncompat__ = ">=2.7,<4"
