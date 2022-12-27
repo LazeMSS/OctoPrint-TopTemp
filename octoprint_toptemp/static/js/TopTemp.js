@@ -1225,12 +1225,18 @@ $(function() {
             });
         }
 
-        self.findMinMaxAvg = function(data){
-            var items = data.length;
+        self.findMinMaxAvg = function(data,maxHis){
+            var items = 0;
+            var nowTs = Math.round(Date.now() / 1000);
             var lowValD = null;
             var highValD = null;
             var sum = 0;
             data.map(function(val,i){
+                var seconds = val[0]-nowTs;
+                if (seconds < maxHis){
+                    return false;
+                }
+                items++;
                 sum += val[1];
                 if (lowValD == null || lowValD > val[1]){
                     lowValD = val[1];
@@ -1239,7 +1245,11 @@ $(function() {
                     highValD = val[1];
                 }
             });
-            return {'low':lowValD,'high':highValD,'avg':(sum/items)}
+            var avg = null;
+            if (items > 0){
+                avg = (sum/items);
+            }
+            return {'low':lowValD,'high':highValD,'avg':avg};
         }
 
         self.updatePopover = function($thisID,$isCustom,iSettings){
@@ -1252,17 +1262,22 @@ $(function() {
             // update title by calling the original one
             mainItem.data('popover').tip().find('h3.popover-title').html(mainItem.data('popover').options.title());
 
+            var maxHis = self.popoverGHist;
+            if (iSettings.gHisSecs() > 0){
+                maxHis = 0 - iSettings.gHisSecs();
+            }
+
             // Show target/actual
             if ($('#TopTempPopoverText_'+$thisID).length){
                 if ($isCustom){
                     if ($thisID in self.customHistory){
-                        var stats = self.findMinMaxAvg(self.customHistory[$thisID]);
+                        var stats = self.findMinMaxAvg(self.customHistory[$thisID],maxHis);
                         var actual = self.customHistory[$thisID][self.customHistory[$thisID].length-1][1];
                         var output = '<div class="pull-left"><small>Current: '+self.formatTempLabel($thisID,actual,iSettings,false)+'</small></div><div class="pull-right"><small>Max: '+self.formatTempLabel($thisID,stats.high,iSettings,false)+' &middot; Min: '+self.formatTempLabel($thisID,stats.low,iSettings,false)+' &middot; Avg: '+self.formatTempLabel($thisID,stats.avg,iSettings,false)+'</small></div>';
                         $('#TopTempPopoverText_'+$thisID).html(output);
                     }
                 }else{
-                    var stats = self.findMinMaxAvg(self.tempModel.temperatures[$thisID].actual);
+                    var stats = self.findMinMaxAvg(self.tempModel.temperatures[$thisID].actual,maxHis);
                     var actual = self.tempModel.temperatures[$thisID].actual[self.tempModel.temperatures[$thisID].actual.length-1][1];
                     var target = self.tempModel.temperatures[$thisID].target[self.tempModel.temperatures[$thisID].target.length-1][1];
                     var output = '<div class="pull-left"><small>Actual: '+self.formatTempLabel($thisID,actual,iSettings,false)+'</small></div><div class="pull-right"><small>Target: ';
@@ -1300,10 +1315,6 @@ $(function() {
                 }
             }
 
-            var maxHis = self.popoverGHist;
-            if (iSettings.gHisSecs() > 0){
-                maxHis = 0 - iSettings.gHisSecs();
-            }
             // Custom data or not?
             if ($isCustom){
                 // No data?!
