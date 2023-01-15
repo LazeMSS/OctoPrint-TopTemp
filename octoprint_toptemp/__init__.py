@@ -1,4 +1,3 @@
-
 # coding=utf-8
 from __future__ import absolute_import
 
@@ -18,6 +17,7 @@ import re
 import threading
 import queue
 import time
+import math
 
 class TopTempPlugin(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.SettingsPlugin,
@@ -253,7 +253,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     # make sure changed customMons are returned
     def on_settings_load(self):
         returnData = self._settings.get([],merged=True, asdict=True)
-        returnData['customMon'] = self.customMon;
+        returnData['customMon'] = self.customMon
         return returnData
 
     # Save handler - has a bit of hack to cleanup remove custom monitors
@@ -336,7 +336,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         data['customMon'] = newCust.copy()
 
         data['firstRun'] = False
-        self.customMon = newCust.copy();
+        self.customMon = newCust.copy()
 
         #Needed to write all the data
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
@@ -573,8 +573,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     # Trigger by the timer
     def runCustomMon(self,indx,cmd):
         code, out, err = self.runcommand(cmd)
-        self.debugOut(cmd + " returned: " +out + " for index :"+indx)
+        self.debugOut(cmd + "("+indx+") returned: " +out + " for index :"+indx)
         if code or err:
+            self.debugOut(cmd + " failed with code: " + code + " error: " + error)
             self._plugin_manager.send_plugin_message(self._identifier, dict(success=False,error=err,returnCode=code,result=None,key=indx,type="custom"))
         else:
             self.handleCustomData(indx,out,time.time())
@@ -727,19 +728,23 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 return None
 
     def handleCustomData(self,indx,out,time):
-        self.debugOut("Got custom data: " + str(out))
         # Check
         if isinstance(out,(float, int)) or self.checkStringIsVal(out):
+            self.debugOut("Got good custom data for "+indx+": " + str(out))
             resultData = [time,float(out)]
             if indx not in self.customHistory:
                 self.customHistory[indx] = []
             self.customHistory[indx].append(resultData)
-            # slice of 300
-            self.customHistory[indx] = self.customHistory[indx][-300:]
+            # we keep the history for double the needed just for fun
+            sliceMe = math.ceil(0 - ((int(self.customMon[indx]['gHisSecs'])/int(self.customMon[indx]['interval']))))*2
+            self.debugOut(indx + " only wants " + str(self.customMon[indx]['gHisSecs']) + " seconds of data - we need to slice: " + str(sliceMe))
+            self.customHistory[indx] = self.customHistory[indx][sliceMe:]
 
             # send to the frontend
             self.debugOut("Sending data to UI, " + indx + " : " + str(out))
             self._plugin_manager.send_plugin_message(self._identifier, dict(success=True,error=None,returnCode=0,result=resultData,key=indx,type="custom"))
+        else:
+            self.debugOut("Got BAD custom data for "+indx+": " + str(out))
 
     # Available commands and parameters
     # testCmd: will run any command
@@ -775,7 +780,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             self._logger.info("Sending items monitored")
             sortOrder = self._settings.get(["sortOrder"],merged=True,asdict=True)
             custom = self._settings.get(["customMon"],merged=True,asdict=True)
-            curTemps = self._printer.get_current_temperatures();
+            curTemps = self._printer.get_current_temperatures()
             returnList = {}
             lastValues = {}
             for item in sortOrder:
@@ -869,16 +874,21 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
     # run command wrapper
     def runcommand (self,cmd):
+        thisExec = None
+        if sys.platform.startswith("linux"):
+            thisExec = '/bin/bash'
         proc = subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 shell=True,
+                                executable=thisExec,
                                 universal_newlines=True)
         try:
             std_out, std_err = proc.communicate(timeout=self.cmdTimeout)
         except subprocess.TimeoutExpired:
             proc.kill()
-            return -1, "\""+cmd+"\" timed out", "Maximum execution time, 5 seconds, exceeded!"
+            self._logger.warning("\""+cmd+"\" timed out")
+            return -1, "\""+cmd+"\" timed out", "Maximum execution time, "+self.cmdTimeout+" seconds, exceeded!"
 
         return proc.returncode, std_out.strip(), std_err
 
@@ -948,6 +958,10 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.gcodeQue.put(dataSet)
 
     def checkStringIsVal(self,inputStr):
+        if inputStr == "":
+            self.debugOut("input is empty")
+            return False
+
         inputStr = str(inputStr)
         if inputStr[0] in ["+", "-"]:
             inputStr = inputStr[1:]

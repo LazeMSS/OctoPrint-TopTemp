@@ -113,7 +113,7 @@ $(function() {
                     }
                 }else{
                     var reval = 0;
-                    graphData = {'series' : [self.tempModel.temperatures[name].actual.slice(-300).map(function(val,i){return val[1]})]};
+                    graphData = {'series' : [self.tempModel.temperatures[name].actual.slice((0-iSettings.gHisSecs())).map(function(val,i){return val[1]})]};
                 }
 
                 var MinYVal = reval;
@@ -350,7 +350,7 @@ $(function() {
                 self.customHistory[data.key] = [];
             }
             self.customHistory[data.key].push(data.result);
-            self.customHistory[data.key] = self.customHistory[data.key].slice(-300);
+            //self.customHistory[data.key] = self.customHistory[data.key].slice(-300);
             self.FormatTempHTML(data.key,{'actual' : data.result[1]},true);
         }
 
