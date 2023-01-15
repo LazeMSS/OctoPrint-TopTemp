@@ -573,8 +573,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
     # Trigger by the timer
     def runCustomMon(self,indx,cmd):
         code, out, err = self.runcommand(cmd)
-        self.debugOut(cmd + " returned: " +out + " for index :"+indx)
+        self.debugOut(cmd + "("+indx+") returned: " +out + " for index :"+indx)
         if code or err:
+            self.debugOut(cmd + " failed with code: " + code + " error: " + error)
             self._plugin_manager.send_plugin_message(self._identifier, dict(success=False,error=err,returnCode=code,result=None,key=indx,type="custom"))
         else:
             self.handleCustomData(indx,out,time.time())
@@ -727,9 +728,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
                 return None
 
     def handleCustomData(self,indx,out,time):
-        self.debugOut("Got custom data: " + str(out))
         # Check
         if isinstance(out,(float, int)) or self.checkStringIsVal(out):
+            self.debugOut("Got good custom data for "+indx+": " + str(out))
             resultData = [time,float(out)]
             if indx not in self.customHistory:
                 self.customHistory[indx] = []
@@ -742,6 +743,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             # send to the frontend
             self.debugOut("Sending data to UI, " + indx + " : " + str(out))
             self._plugin_manager.send_plugin_message(self._identifier, dict(success=True,error=None,returnCode=0,result=resultData,key=indx,type="custom"))
+        else:
+            self.debugOut("Got BAD custom data for "+indx+": " + str(out))
 
     # Available commands and parameters
     # testCmd: will run any command
@@ -871,10 +874,14 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
     # run command wrapper
     def runcommand (self,cmd):
+        thisExec = None
+        if sys.platform.startswith("linux"):
+            thisExec = '/bin/bash'
         proc = subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 shell=True,
+                                executable=thisExec,
                                 universal_newlines=True)
         try:
             std_out, std_err = proc.communicate(timeout=self.cmdTimeout)
@@ -951,6 +958,10 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         self.gcodeQue.put(dataSet)
 
     def checkStringIsVal(self,inputStr):
+        if inputStr == "":
+            self.debugOut("input is empty")
+            return False
+
         inputStr = str(inputStr)
         if inputStr[0] in ["+", "-"]:
             inputStr = inputStr[1:]
