@@ -149,6 +149,9 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
             dict(type="settings", custom_bindings=False)
         ]
 
+    def is_template_autoescaped(self):
+        return True
+
 
     # Fix dynamic default settings for custom monitoring and fix first run
     def on_settings_initialized(self):
