@@ -854,6 +854,8 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
             return flask.jsonify(repsonse)
 
+    def is_api_protected(self):
+        True
 
     def debugOut(self,msg):
         # self._logger.info(msg)
