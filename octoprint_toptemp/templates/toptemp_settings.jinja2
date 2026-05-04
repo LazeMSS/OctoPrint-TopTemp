@@ -8,7 +8,7 @@
             <a class="dropdown-toggle" data-toggle="dropdown" href="#">Extra tools<b class="caret"></b></a>
             <ul class="dropdown-menu">
                 <!-- ko foreach: new Array((settings.plugins.toptemp.noTools()*1-1)) -->
-                <li><a data-toggle="tab" class="TopTempHideTool" data-bind="attr: { href: '#settings_toptemp_tool' + ($index()+1) }, html: 'Tool ' + ($index()+1) + ' settings'"></a></li>
+                <li><a data-toggle="tab" class="TopTempHideTool" data-bind="attr: { href: '#settings_toptemp_tool' + ($index()+1) }, text: 'Tool ' + ($index()+1) + ' settings'"></a></li>
                 <!-- /ko -->
             </ul>
         </li>
@@ -415,7 +415,7 @@
         <!-- ko foreach: new Array((settings.plugins.toptemp.noTools()*1)) -->
 
         <div class="tab-pane" data-bind="attr: { id: 'settings_toptemp_tool' + $index() }">
-            <h4 data-bind=" html: 'Tool ' + $index() + ' settings'"></h4>
+            <h4 data-bind="text: 'Tool ' + $index() + ' settings'"></h4>
             <div class="control-group" title="Show the tool temperature in top bar">
                 <div class="controls">
                     <label class="checkbox">
