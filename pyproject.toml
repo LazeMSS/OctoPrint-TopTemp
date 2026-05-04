@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Top-Temp"
-version = "0.0.2.4"
+version = "0.0.2.5"
 description = "Show temperatures and more in the top bar"
 authors = [
     { name = "Mikkel Skovgaard", email = "toptemp@jemi.dk" },
