@@ -3,8 +3,7 @@ from __future__ import absolute_import
 
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
-from octoprint.server import user_permission
-from octoprint.access.permissions import Permissions
+from octoprint.access.permissions import Permissions, ADMIN_GROUP
 
 import os.path
 from os import path
@@ -19,6 +18,7 @@ import threading
 import queue
 import time
 import math
+from flask_babel import gettext
 
 class TopTempPlugin(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.SettingsPlugin,
@@ -576,7 +576,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
         code, out, err = self.runcommand(cmd)
         self.debugOut(cmd + "("+indx+") returned: " +out + " for index :"+indx)
         if code or err:
-            self.debugOut(cmd + " failed with code: " + code + " error: " + error)
+            self.debugOut(cmd + " failed with code: " + code + " error: " + err)
             self._plugin_manager.send_plugin_message(self._identifier, dict(success=False,error=err,returnCode=code,result=None,key=indx,type="custom"))
         else:
             self.handleCustomData(indx,out,time.time())
@@ -764,7 +764,7 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
     # handle api calls
     def on_api_command(self, command, data):
-        if not user_permission.can():
+        if not Permissions.PLUGIN_TOPTEMP_API.can():
             return flask.make_response("Insufficient rights", 403)
 
         # Get cpu temp options found on this system - allows a reload
@@ -898,6 +898,16 @@ class TopTempPlugin(octoprint.plugin.StartupPlugin,
 
         return proc.returncode, std_out.strip(), std_err
 
+    # additional permissions hook
+    def get_additional_permissions(self, *args, **kwargs):
+        return [
+            dict(key="API",
+                 name="Top Temp API",
+                 description=gettext("Allows use of Top Temp API calls."),
+                 roles=["admin"],
+                 dangerous=True,
+                 default_groups=[ADMIN_GROUP])
+        ]
 
     # Software update info
     def get_update_information(self):
@@ -986,4 +996,5 @@ def __plugin_load__():
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
         "octoprint.comm.protocol.gcode.received": __plugin_implementation__.gCodeHandlerRecv,
         "octoprint.comm.protocol.gcode.sent": __plugin_implementation__.gCodeHandlerSent,
+        "octoprint.access.permissions": __plugin_implementation__.get_additional_permissions,
     }
